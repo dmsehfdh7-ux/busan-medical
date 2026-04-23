@@ -40,7 +40,7 @@ const BODY_PARTS = ['발목', '무릎', '허벅지', '서혜부', '종아리', '
 const STATUS_OPTIONS = [
   { value: '정상 훈련', color: 'bg-emerald-50 text-emerald-700 border-emerald-100', icon: CheckCircle2 },
   { value: '부분 참여', color: 'bg-amber-50 text-amber-700 border-amber-100', icon: Activity },
-  { value: '재활', color: 'bg-orange-50 text-orange-700 border-orange-100', icon: Clock },
+  { value: '재활', color: 'bg-orange-50 text-orange-800 border-orange-200', icon: Clock },
   { value: '훈련 제외', color: 'bg-rose-50 text-rose-700 border-rose-100', icon: AlertCircle }
 ];
 
@@ -119,18 +119,12 @@ export default function App() {
       teamStats[team] = { total: teamPlayers.length, normal };
     });
 
-    const bodyPartStats = {};
-    BODY_PARTS.forEach(part => bodyPartStats[part] = 0);
-    players.filter(p => p.status !== '정상 훈련' && p.absenceCategory === 'injury').forEach(p => {
-      if (bodyPartStats[p.bodyPart] !== undefined) bodyPartStats[p.bodyPart]++;
-    });
-
     const returningSoon = players
       .filter(p => p.status !== '정상 훈련' && p.expectedReturn)
       .sort((a, b) => new Date(a.expectedReturn) - new Date(b.expectedReturn))
       .slice(0, 8);
 
-    return { teamStats, bodyPartStats, returningSoon };
+    return { teamStats, returningSoon };
   }, [players]);
 
   const openModal = (player = null) => {
@@ -227,7 +221,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans pb-24">
-      {/* 콤팩트 헤더 */}
       <header className="bg-[#C8102E] text-white sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
           <h1 className="text-2xl font-black tracking-tighter uppercase italic">부산아이파크</h1>
@@ -248,51 +241,38 @@ export default function App() {
       </header>
 
       <main className="max-w-7xl mx-auto p-6 space-y-6 animate-in fade-in duration-500">
-        {/* 통계 섹션: 불필요한 공백 제거 및 효율적 배치 */}
         {activeTab === '전체 대시보드' && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* 연령별 참여 현황 */}
-            <div className="lg:col-span-8 bg-white p-7 rounded-[2.5rem] shadow-sm border border-gray-100">
+          <div className="grid grid-cols-1 gap-6">
+            {/* 연령별 참여 현황 - 전체 넓이로 조정 */}
+            <div className="bg-white p-7 rounded-[2.5rem] shadow-sm border border-gray-100">
               <h3 className="text-base font-black mb-6 flex items-center gap-2 text-slate-800"><TrendingUp className="w-5 h-5 text-[#C8102E]" /> 연령별 훈련 참여 현황</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                 {TEAMS.map(team => {
                   const { total, normal } = stats.teamStats[team];
                   const percent = total > 0 ? Math.round((normal / total) * 100) : 0;
                   return (
-                    <div key={team} className="bg-slate-50 p-5 rounded-3xl border border-slate-100 text-center space-y-2">
-                      <p className="text-[10px] font-black text-slate-400 uppercase">{team}</p>
-                      <p className="text-2xl font-black text-slate-800 tracking-tighter">{normal}<span className="text-xs text-slate-300 ml-1">/ {total}</span></p>
-                      <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
+                    <div key={team} className="bg-slate-50 p-6 rounded-3xl border border-slate-100 text-center space-y-3">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{team}</p>
+                      <p className="text-3xl font-black text-slate-800 tracking-tighter">{normal}<span className="text-sm text-slate-300 ml-1">/ {total}</span></p>
+                      <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
                         <div className="bg-[#C8102E] h-full transition-all duration-1000" style={{ width: `${percent}%` }}></div>
                       </div>
+                      <p className="text-[10px] font-bold text-slate-400">{percent}% 참여 중</p>
                     </div>
                   );
                 })}
               </div>
             </div>
 
-            {/* 부상 부위 퀵 뷰 */}
-            <div className="lg:col-span-4 bg-white p-7 rounded-[2.5rem] shadow-sm border border-gray-100 flex flex-col justify-center">
-              <h3 className="text-[10px] font-black text-gray-400 tracking-widest uppercase mb-4 italic">Injury Stats</h3>
-              <div className="space-y-3">
-                {Object.entries(stats.bodyPartStats).sort((a,b) => b[1] - a[1]).slice(0, 4).map(([part, count]) => (
-                  <div key={part} className="flex justify-between items-center text-xs">
-                    <span className="font-bold text-slate-600">{part}</span>
-                    <span className={`font-black ${count > 0 ? 'text-[#C8102E]' : 'text-slate-300'}`}>{count}명</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
             {/* 복귀 예정 선수 명단 */}
-            <div className="lg:col-span-12 bg-white p-7 rounded-[2.5rem] shadow-sm border border-gray-100">
+            <div className="bg-white p-7 rounded-[2.5rem] shadow-sm border border-gray-100">
               <h3 className="text-base font-black mb-5 flex items-center gap-2 text-slate-800"><Clock className="w-5 h-5 text-orange-500" /> 복귀 예정 선수</h3>
               <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2">
                 {stats.returningSoon.length > 0 ? stats.returningSoon.map(p => (
-                  <div key={p.id} className="min-w-[200px] p-4 bg-slate-50 rounded-2xl border border-slate-100 flex items-center justify-between">
+                  <div key={p.id} className="min-w-[240px] p-5 bg-slate-50 rounded-2xl border border-slate-100 flex items-center justify-between">
                     <div>
                       <p className="text-sm font-black text-slate-800">{p.name}</p>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase">{p.team}</p>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase">{p.team} · {p.position}</p>
                     </div>
                     <div className="text-right">
                       <p className="text-[10px] font-black text-orange-600 uppercase">Return</p>
@@ -307,7 +287,6 @@ export default function App() {
           </div>
         )}
 
-        {/* 액션 패널 */}
         <div className="flex flex-col md:flex-row justify-between items-center bg-white p-4 rounded-[2rem] shadow-sm border border-gray-100 gap-4">
           <div className="relative w-full md:w-96 group">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300 group-focus-within:text-[#C8102E] transition-colors" />
@@ -336,7 +315,6 @@ export default function App() {
           </div>
         </div>
 
-        {/* 선수 명단: 그리드 간격 최적화 */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredPlayers.map(player => {
             const statusCfg = STATUS_OPTIONS.find(s => s.value === player.status) || STATUS_OPTIONS[0];
@@ -363,7 +341,6 @@ export default function App() {
                     <StatusIcon className="w-3.5 h-3.5" /> {player.status}
                   </div>
                   
-                  {/* 히스토리 섹션: 간결하고 가독성 좋게 */}
                   <div className="bg-slate-50 p-4 rounded-2xl relative">
                     <button 
                       onClick={() => { setSelectedPlayerForHistory(player); setIsHistoryModalOpen(true); }}
@@ -388,7 +365,6 @@ export default function App() {
         </div>
       </main>
 
-      {/* 부상 히스토리 전용 모달: 불필요한 디자인 배제 */}
       {isHistoryModalOpen && selectedPlayerForHistory && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
           <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsHistoryModalOpen(false)}></div>
@@ -425,7 +401,6 @@ export default function App() {
         </div>
       )}
 
-      {/* 일괄 등록 모달 */}
       {isBulkModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
           <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsBulkModalOpen(false)}></div>
@@ -445,7 +420,6 @@ export default function App() {
         </div>
       )}
 
-      {/* 등록/수정 모달 */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in zoom-in duration-300">
           <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsModalOpen(false)}></div>
