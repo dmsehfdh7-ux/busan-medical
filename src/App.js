@@ -32,6 +32,7 @@
         }
         /* 아이콘 색상 강제 지정 */
         svg { stroke: currentColor; fill: none; }
+        input:focus, select:focus, textarea:focus { outline: none; ring: 2px; ring-color: #C8102E; }
     </style>
 </head>
 <body>
@@ -55,7 +56,6 @@
         const COLLECTION_NAME = 'youth_players_final_v9';
         const TEAMS = ['U18', 'U15', 'U12', 'WFC U15'];
         const POSITIONS = ['FW', 'MF', 'DF', 'GK'];
-        const BODY_PARTS = ['발목', '무릎', '허벅지', '서혜부', '종아리', '허리', '어깨', '기타'];
 
         const STATUS_OPTIONS = [
             { value: '정상 훈련', color: 'bg-emerald-50 text-emerald-700 border-emerald-100', icon: 'check-circle-2' },
@@ -110,7 +110,7 @@
             const [editingId, setEditingId] = useState(null);
             const [formData, setFormData] = useState({ 
                 team: 'U18', name: '', position: 'MF', status: '정상 훈련', 
-                absenceCategory: 'injury', bodyPart: '기타', details: '', expectedReturn: '',
+                absenceCategory: 'injury', bodyPart: '', details: '', expectedReturn: '',
                 history: []
             });
 
@@ -164,6 +164,23 @@
                 return { teamStats, returningSoon };
             }, [players]);
 
+            // 수정 모달 열기 함수 (수동 수정 지원)
+            const openEditModal = (player) => {
+                setEditingId(player.id);
+                setFormData({
+                    team: player.team || 'U18',
+                    name: player.name || '',
+                    position: player.position || 'MF',
+                    status: player.status || '정상 훈련',
+                    absenceCategory: player.absenceCategory || 'injury',
+                    bodyPart: player.bodyPart || '',
+                    details: player.details || '',
+                    expectedReturn: player.expectedReturn || '',
+                    history: player.history || []
+                });
+                setIsModalOpen(true);
+            };
+
             const savePlayer = async (e) => {
                 e.preventDefault();
                 if (!formData.name) return;
@@ -194,6 +211,7 @@
                         lastUpdatedAt: new Date().toISOString() 
                     });
                     setIsModalOpen(false);
+                    setEditingId(null);
                 } catch (e) { alert("저장 중 오류가 발생했습니다."); }
             };
 
@@ -213,7 +231,7 @@
                             const newDocRef = playersRef.doc();
                             batch.set(newDocRef, { 
                                 name, team: targetTeam, position: 'MF', status: '정상 훈련', 
-                                absenceCategory: 'injury', bodyPart: '기타', details: '', expectedReturn: '', 
+                                absenceCategory: 'injury', bodyPart: '', details: '', expectedReturn: '', 
                                 history: [{ date: timestamp, from: '신규 등록', to: '정상 훈련', note: '일괄 등록' }],
                                 lastUpdatedAt: new Date().toISOString() 
                             });
@@ -234,14 +252,14 @@
             };
 
             if (loading) return (
-                <div className="min-h-screen flex items-center justify-center bg-white">
-                    <div className="w-8 h-8 border-2 border-[#C8102E] border-t-transparent rounded-full animate-spin"></div>
+                <div className="min-h-screen flex flex-col items-center justify-center bg-white">
+                    <div className="w-10 h-10 border-4 border-[#C8102E] border-t-transparent rounded-full animate-spin mb-4"></div>
+                    <p className="text-[#C8102E] font-black text-xs tracking-widest animate-pulse uppercase">Busan Ipark Medical Loading</p>
                 </div>
             );
 
             return (
                 <div className="min-h-screen">
-                    {/* 헤더: 타이틀 부산아이파크, 아이콘 제거 */}
                     <header className="bg-[#C8102E] text-white sticky top-0 z-40 shadow-xl">
                         <div className="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
                             <h1 className="text-2xl font-black tracking-tighter uppercase italic">부산아이파크</h1>
@@ -252,7 +270,7 @@
                                 <button 
                                     key={tab} 
                                     onClick={() => setActiveTab(tab)} 
-                                    className={`px-6 py-3 rounded-t-2xl font-black text-xs transition-all whitespace-nowrap ${activeTab === tab ? 'bg-slate-50 text-[#C8102E]' : 'text-white/40 hover:text-white/80'}`}
+                                    className={`px-8 py-4 rounded-t-3xl font-black text-xs transition-all whitespace-nowrap tracking-tight ${activeTab === tab ? 'bg-slate-50 text-[#C8102E] shadow-sm' : 'text-white/40 hover:text-white/80'}`}
                                 >
                                     {tab}
                                 </button>
@@ -329,7 +347,7 @@
                                     <LucideIcon name="clipboard-check" /> 일괄 등록
                                 </button>
                                 <button 
-                                    onClick={() => { setEditingId(null); setFormData({ team: activeTab !== '전체 대시보드' ? activeTab : 'U18', name: '', position: 'MF', status: '정상 훈련', absenceCategory: 'injury', bodyPart: '기타', details: '', expectedReturn: '', history: [] }); setIsModalOpen(true); }} 
+                                    onClick={() => { setEditingId(null); setFormData({ team: activeTab !== '전체 대시보드' ? activeTab : 'U18', name: '', position: 'MF', status: '정상 훈련', absenceCategory: 'injury', bodyPart: '', details: '', expectedReturn: '', history: [] }); setIsModalOpen(true); }} 
                                     className="flex-1 md:flex-none bg-[#C8102E] text-white px-10 py-4 rounded-3xl font-black text-xs flex items-center justify-center gap-2 shadow-xl shadow-red-100 hover:bg-red-800 transition-all active:scale-95"
                                 >
                                     <LucideIcon name="plus" /> 선수 추가
@@ -343,15 +361,20 @@
                                 const statusCfg = STATUS_OPTIONS.find(s => s.value === player.status) || STATUS_OPTIONS[0];
                                 const latestLog = player.history && player.history.length > 0 ? player.history[player.history.length - 1] : null;
                                 return (
-                                    <div key={player.id} className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-100 relative group transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
+                                    <div key={player.id} className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-100 relative group transition-all duration-500 hover:shadow-xl hover:-translate-y-1">
                                         <div className="flex items-center justify-between mb-6">
                                             <div className="flex gap-2 items-center text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none">
                                                 <span className="bg-slate-100 px-2.5 py-1 rounded-lg">{player.position}</span>
                                                 <span>{player.team}</span>
                                             </div>
                                             <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-all duration-200">
-                                                <button onClick={() => { setEditingId(player.id); setFormData({...player}); setIsModalOpen(true); }} className="p-2 text-blue-500 bg-blue-50 rounded-xl hover:bg-blue-100"><LucideIcon name="edit-2" size={14} /></button>
-                                                <button onClick={() => deletePlayer(player.id)} className="p-2 text-rose-500 bg-rose-50 rounded-xl hover:bg-rose-100"><LucideIcon name="trash-2" size={14} /></button>
+                                                {/* 수정 버튼만 표시, 삭제 버튼(빨간색) 제거 완료 */}
+                                                <button 
+                                                    onClick={() => openEditModal(player)} 
+                                                    className="px-4 py-1.5 text-blue-500 bg-blue-50 rounded-lg hover:bg-blue-500 hover:text-white text-[11px] font-black transition-all"
+                                                >
+                                                    수정
+                                                </button>
                                             </div>
                                         </div>
                                         
@@ -362,7 +385,6 @@
                                                 <LucideIcon name={statusCfg.icon} /> {player.status}
                                             </div>
                                             
-                                            {/* 간결한 부상 히스토리 영역 */}
                                             <div className="bg-slate-50 p-5 rounded-3xl relative overflow-hidden group/history">
                                                 <button 
                                                     onClick={() => { setSelectedPlayerForHistory(player); setIsHistoryModalOpen(true); }} 
@@ -387,7 +409,7 @@
                         </div>
                     </main>
 
-                    {/* 히스토리 모달: 세련된 타임라인 */}
+                    {/* 히스토리 모달 */}
                     {isHistoryModalOpen && selectedPlayerForHistory && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
                             <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsHistoryModalOpen(false)}></div>
@@ -426,7 +448,7 @@
                         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
                             <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsBulkModalOpen(false)}></div>
                             <div className="bg-white rounded-[3.5rem] w-full max-w-xl p-12 relative z-10 shadow-2xl space-y-8">
-                                <h2 className="text-2xl font-black tracking-tight leading-none text-slate-800 uppercase">명단 일괄 등록</h2>
+                                <h2 className="text-2xl font-black tracking-tight leading-none text-slate-800 uppercase italic">명단 일괄 등록</h2>
                                 <p className="text-xs font-bold text-[#C8102E] italic leading-none">이름만 한 줄에 한 명씩 입력해 주세요. (현재 선택된 연령대로 등록됩니다)</p>
                                 <textarea 
                                     className="w-full h-80 p-8 bg-slate-50 rounded-[2.5rem] outline-none font-bold text-sm resize-none focus:ring-4 focus:ring-[#C8102E]/5 border-none transition-all shadow-inner" 
@@ -445,9 +467,19 @@
                     {/* 개별 추가/수정 모달 */}
                     {isModalOpen && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in zoom-in duration-300">
-                            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsModalOpen(false)}></div>
+                            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => { setIsModalOpen(false); setEditingId(null); }}></div>
                             <div className="bg-white rounded-[4rem] w-full max-w-lg p-12 relative z-10 shadow-2xl space-y-10 max-h-[95vh] overflow-y-auto no-scrollbar">
-                                <h2 className="text-3xl font-black tracking-tight text-center leading-none text-slate-800 uppercase">{editingId ? '선수 수정' : '신규 등록'}</h2>
+                                <div className="flex items-center justify-between mb-2">
+                                    <h2 className="text-3xl font-black tracking-tight leading-none text-slate-800 uppercase italic leading-none">{editingId ? '선수 수정' : '신규 등록'}</h2>
+                                    {editingId && (
+                                        <button 
+                                            onClick={() => deletePlayer(editingId)} 
+                                            className="px-4 py-2 bg-rose-50 text-rose-600 rounded-2xl text-[10px] font-black hover:bg-rose-600 hover:text-white transition-all shadow-sm"
+                                        >
+                                            데이터 삭제
+                                        </button>
+                                    )}
+                                </div>
                                 <div className="space-y-8">
                                     <div className="grid grid-cols-2 gap-6">
                                         <div className="space-y-3">
@@ -483,22 +515,38 @@
                                     {formData.status !== '정상 훈련' && (
                                         <div className="p-8 bg-rose-50 rounded-[3rem] space-y-6 border border-rose-100 animate-in slide-in-from-top-4 duration-300 shadow-sm">
                                             <div className="grid grid-cols-2 gap-4">
-                                                <select className="w-full p-4 bg-white border-none rounded-2xl font-bold text-xs shadow-sm focus:ring-2 focus:ring-rose-200 outline-none" value={formData.absenceCategory} onChange={e => setFormData({...formData, absenceCategory: e.target.value})}>
-                                                    {ABSENCE_REASONS.map(r => (
-                                                        <option key={r.value} value={r.value}>{r.label}</option>
-                                                    ))}
-                                                </select>
-                                                <select className="w-full p-4 bg-white border-none rounded-2xl font-bold text-xs shadow-sm focus:ring-2 focus:ring-rose-200 outline-none" value={formData.bodyPart} onChange={e => setFormData({...formData, bodyPart: e.target.value})}>{BODY_PARTS.map(p => <option key={p} value={p}>{p}</option>)}</select>
+                                                <div className="space-y-2">
+                                                    <label className="text-[9px] font-black text-rose-800 ml-2 uppercase tracking-tighter">결장 사유</label>
+                                                    <select className="w-full p-4 bg-white border-none rounded-2xl font-bold text-xs shadow-sm focus:ring-2 focus:ring-rose-200 outline-none" value={formData.absenceCategory} onChange={e => setFormData({...formData, absenceCategory: e.target.value})}>
+                                                        {ABSENCE_REASONS.map(r => (
+                                                            <option key={r.value} value={r.value}>{r.label}</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                                {/* 부상 부위: 선택창에서 직접 입력(텍스트 필드)으로 변경 완료 */}
+                                                <div className="space-y-2">
+                                                    <label className="text-[9px] font-black text-rose-800 ml-2 uppercase tracking-tighter">부상 부위 (직접 입력)</label>
+                                                    <input 
+                                                        type="text" 
+                                                        placeholder="부위 입력 (예: 오른쪽 발목)" 
+                                                        className="w-full p-4 bg-white border-none rounded-2xl font-bold text-xs shadow-sm focus:ring-2 focus:ring-rose-200 outline-none" 
+                                                        value={formData.bodyPart} 
+                                                        onChange={e => setFormData({...formData, bodyPart: e.target.value})} 
+                                                    />
+                                                </div>
                                             </div>
-                                            <textarea placeholder="상세 사유 기록 (부상 정도 등)" className="w-full p-5 border-none rounded-2xl text-xs font-bold resize-none bg-white shadow-sm focus:ring-2 focus:ring-rose-200 outline-none" rows="2" value={formData.details} onChange={e => setFormData({...formData, details: e.target.value})}></textarea>
                                             <div className="space-y-2">
-                                                <label className="text-[9px] font-black text-rose-800 ml-2 uppercase tracking-tighter">Expected Return</label>
+                                                <label className="text-[10px] font-black text-rose-800 ml-2 uppercase tracking-tighter">상세 내용</label>
+                                                <textarea placeholder="상세 사유 기록 (부상 정도 등)" className="w-full p-5 border-none rounded-2xl text-xs font-bold resize-none bg-white shadow-sm focus:ring-2 focus:ring-rose-200 outline-none" rows="2" value={formData.details} onChange={e => setFormData({...formData, details: e.target.value})}></textarea>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-[9px] font-black text-rose-800 ml-2 uppercase tracking-tighter">복귀 예정일</label>
                                                 <input type="date" className="w-full p-4 border-none rounded-2xl text-xs font-black bg-white shadow-sm focus:ring-2 focus:ring-rose-200 outline-none" value={formData.expectedReturn} onChange={e => setFormData({...formData, expectedReturn: e.target.value})} />
                                             </div>
                                         </div>
                                     )}
                                 </div>
-                                <button onClick={savePlayer} className="w-full py-7 bg-[#C8102E] text-white rounded-[2rem] font-black text-xl shadow-2xl hover:bg-red-800 transition-all active:scale-95 tracking-tighter uppercase">Save Records</button>
+                                <button onClick={savePlayer} className="w-full py-7 bg-[#C8102E] text-white rounded-[2rem] font-black text-xl shadow-2xl hover:bg-red-800 transition-all active:scale-95 tracking-tighter uppercase leading-none">Save Records</button>
                             </div>
                         </div>
                     )}
