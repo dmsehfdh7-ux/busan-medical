@@ -13,12 +13,13 @@ import { getFirestore, collection, onSnapshot, doc, setDoc } from 'firebase/fire
 let app, auth, db;
 let isFirebaseReady = false;
 
+// appId에 슬래시(/)가 포함될 경우 Firestore 경로 오류가 발생하므로 치환 처리합니다.
 const rawAppId = typeof __app_id !== 'undefined' ? __app_id : 'busan-ipark-medical-official';
 const appId = rawAppId.replace(/\//g, '_');
 
 try {
   const configStr = typeof __firebase_config !== 'undefined' ? __firebase_config : null;
-  if (configStr && configStr !== '{}') {
+  if (configStr && configStr !== '{}' && configStr !== null) {
     const firebaseConfig = JSON.parse(configStr);
     if (!getApps().length) {
       app = initializeApp(firebaseConfig);
@@ -32,7 +33,7 @@ try {
 }
 
 const COLLECTION_NAME = 'youth_players_v1';
-const MOCK_DATA = [{ id: '1', name: '연결 확인용', team: 'U18', position: 'FW', status: '정상 훈련', details: '', expectedReturn: '', history: [] }];
+const MOCK_DATA = [{ id: '1', name: '데이터 연결 대기 중', team: 'U18', position: 'FW', status: '정상 훈련', details: '데이터를 불러오는 중입니다.', expectedReturn: '', history: [] }];
 const TEAMS = ['U18', 'U15', 'U12', 'WFC U15'];
 const POSITIONS = ['FW', 'MF', 'DF', 'GK'];
 
@@ -62,13 +63,19 @@ export default function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState({ team: 'U18', name: '', position: 'MF', status: '정상 훈련', absenceCategory: 'injury', details: '', expectedReturn: '', history: [] });
 
+  // 1. 인증 처리
   useEffect(() => {
-    if (!isFirebaseReady || !auth) { setLoading(false); return; }
+    if (!isFirebaseReady || !auth) {
+      setLoading(false);
+      return;
+    }
     const initAuth = async () => {
       try {
         if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
           await signInWithCustomToken(auth, __initial_auth_token);
-        } else { await signInAnonymously(auth); }
+        } else {
+          await signInAnonymously(auth);
+        }
       } catch (error) { console.error("인증 에러:", error); }
     };
     initAuth();
@@ -76,15 +83,20 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
+  // 2. 데이터 동기화
   useEffect(() => {
     if (!isFirebaseReady || !user || !db) return;
     const playersRef = collection(db, 'artifacts', appId, 'public', 'data', COLLECTION_NAME);
     const unsubscribe = onSnapshot(playersRef, (snapshot) => {
       const playersData = [];
       snapshot.forEach((doc) => playersData.push({ id: doc.id, ...doc.data() }));
+      playersData.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
       setPlayers(playersData.length > 0 ? playersData : MOCK_DATA);
       setLoading(false);
-    }, (error) => { console.error("데이터 로드 실패:", error); setLoading(false); });
+    }, (error) => {
+      console.error("데이터 로드 실패:", error);
+      setLoading(false);
+    });
     return () => unsubscribe();
   }, [user]);
 
@@ -105,6 +117,20 @@ export default function App() {
     absent.forEach(p => { if (stats.categories[p.absenceCategory] !== undefined) stats.categories[p.absenceCategory]++; });
     return stats;
   }, [players]);
+
+  const savePlayer = async (e) => {
+    e.preventDefault();
+    if (!isFirebaseReady) {
+      alert("현재는 미리보기 모드입니다. 데이터베이스 설정이 필요합니다.");
+      return;
+    }
+    try {
+      const docRef = doc(collection(db, 'artifacts', appId, 'public', 'data', COLLECTION_NAME));
+      await setDoc(docRef, { ...formData, lastUpdatedAt: new Date().toISOString() });
+      setIsModalOpen(false);
+      setFormData({ team: activeTab !== '전체 대시보드' ? activeTab : 'U18', name: '', position: 'MF', status: '정상 훈련', absenceCategory: 'injury', details: '', expectedReturn: '', history: [] });
+    } catch (error) { alert("저장 실패: " + error.message); }
+  };
 
   if (loading) return <div className="min-h-screen flex items-center justify-center font-black text-[#C8102E]">부산아이파크 데이터 연결 중...</div>;
 
@@ -148,7 +174,7 @@ export default function App() {
             <div className="relative flex-1 sm:w-64"><Search className="absolute left-3 top-3 w-4 h-4 text-gray-300" /><input type="text" placeholder="선수명 검색..." className="pl-10 pr-4 py-2 bg-gray-50 rounded-xl w-full text-sm outline-none font-bold" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} /></div>
             <select className="px-3 py-2 bg-gray-50 rounded-xl text-xs font-bold border-none outline-none" value={filterPosition} onChange={e => setFilterPosition(e.target.value)}><option value="전체">전체 포지션</option>{POSITIONS.map(p => <option key={p} value={p}>{p}</option>)}</select>
           </div>
-          <button onClick={() => setIsModalOpen(true)} className="bg-[#C8102E] text-white px-6 py-2 rounded-xl font-black text-xs flex items-center gap-2"><Plus className="w-4 h-4" /> 추가</button>
+          <button onClick={() => setIsModalOpen(true)} className="bg-[#C8102E] text-white px-6 py-2 rounded-xl font-black text-xs flex items-center gap-2 transition-transform active:scale-95"><Plus className="w-4 h-4" /> 추가</button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -156,7 +182,7 @@ export default function App() {
             const statusCfg = STATUS_OPTIONS.find(s => s.value === player.status) || STATUS_OPTIONS[0];
             const StatusIcon = statusCfg.icon;
             return (
-              <div key={player.id} className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+              <div key={player.id} className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
                 <div className="flex justify-between items-start mb-4">
                   <div><span className="text-[10px] bg-gray-100 px-2 py-0.5 rounded font-black text-gray-400 uppercase">{player.position}</span><h4 className="text-xl font-black text-gray-900 mt-1">{player.name}</h4></div>
                   <span className="text-[10px] font-black text-gray-300 uppercase">{player.team}</span>
@@ -171,17 +197,20 @@ export default function App() {
 
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="fixed inset-0 bg-black/50" onClick={() => setIsModalOpen(false)}></div>
-          <div className="bg-white rounded-3xl w-full max-w-md p-8 relative z-10 space-y-6">
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsModalOpen(false)}></div>
+          <div className="bg-white rounded-3xl w-full max-w-md p-8 relative z-10 space-y-6 animate-in fade-in zoom-in duration-200">
             <h2 className="text-xl font-black">선수 등록</h2>
             <div className="space-y-4">
-              <input type="text" placeholder="이름" className="w-full p-4 bg-gray-50 rounded-2xl outline-none font-bold" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+              <input type="text" placeholder="이름" className="w-full p-4 bg-gray-50 rounded-2xl outline-none font-bold focus:ring-2 focus:ring-[#C8102E]" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
               <div className="flex gap-2">
-                <select className="flex-1 p-4 bg-gray-50 rounded-2xl font-bold" value={formData.team} onChange={e => setFormData({...formData, team: e.target.value})}>{TEAMS.map(t => <option key={t}>{t}</option>)}</select>
-                <select className="flex-1 p-4 bg-gray-50 rounded-2xl font-bold" value={formData.position} onChange={e => setFormData({...formData, position: e.target.value})}>{POSITIONS.map(p => <option key={p}>{p}</option>)}</select>
+                <select className="flex-1 p-4 bg-gray-50 rounded-2xl font-bold outline-none" value={formData.team} onChange={e => setFormData({...formData, team: e.target.value})}>{TEAMS.map(t => <option key={t}>{t}</option>)}</select>
+                <select className="flex-1 p-4 bg-gray-50 rounded-2xl font-bold outline-none" value={formData.position} onChange={e => setFormData({...formData, position: e.target.value})}>{POSITIONS.map(p => <option key={p}>{p}</option>)}</select>
               </div>
             </div>
-            <button onClick={() => setIsModalOpen(false)} className="w-full py-5 bg-[#C8102E] text-white rounded-2xl font-black">저장하기</button>
+            <div className="flex gap-2">
+              <button onClick={() => setIsModalOpen(false)} className="flex-1 py-5 bg-gray-100 rounded-2xl font-black text-gray-500">취소</button>
+              <button onClick={savePlayer} className="flex-1 py-5 bg-[#C8102E] text-white rounded-2xl font-black shadow-lg shadow-red-100">저장하기</button>
+            </div>
           </div>
         </div>
       )}
