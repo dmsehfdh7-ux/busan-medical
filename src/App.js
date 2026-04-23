@@ -8,16 +8,15 @@ import {
 } from 'lucide-react';
 import { initializeApp, getApps } from 'firebase/app';
 import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'firebase/auth';
-import { getFirestore, collection, doc, onSnapshot, setDoc, deleteDoc, writeBatch } from 'firebase/firestore';
+import { getFirestore, collection, doc, onSnapshot, setDoc, deleteDoc, writeBatch, query } from 'firebase/firestore';
 
 // --- Firebase 초기화 및 전역 설정 ---
-// 빌드 에러 방지를 위해 window 객체 여부와 함께 안전하게 참조합니다.
 const configStr = typeof window !== 'undefined' && typeof __firebase_config !== 'undefined' ? __firebase_config : '{}';
 const firebaseConfig = JSON.parse(configStr);
 
-// RULE 1: appId에서 슬래시(/)를 제거하여 Firestore 세그먼트 개수 오류 방지
+// RULE 1: appId 안정화 (슬래시 완전 제거 및 무조건 홀수 세그먼트 유지용)
 const rawAppId = typeof window !== 'undefined' && typeof __app_id !== 'undefined' ? __app_id : 'busan-ipark-medical-v10';
-const appId = rawAppId.replace(/\//g, '_');
+const appId = String(rawAppId).replace(/\//g, '_');
 
 let app, auth, db;
 if (Object.keys(firebaseConfig).length > 0) {
@@ -82,7 +81,7 @@ export default function App() {
           await signInAnonymously(auth);
         }
       } catch (err) {
-        console.error("Auth process failed:", err);
+        console.error("인증 실패:", err);
       }
     };
 
@@ -99,11 +98,12 @@ export default function App() {
   useEffect(() => {
     if (!user || !db) return;
 
-    // RULE 1 준수: artifacts/{appId}/public/data/{collectionName} (세그먼트 5개)
+    // RULE 1 준수: artifacts/{appId}/public/data/{collectionName}
     try {
       const playersRef = collection(db, 'artifacts', appId, 'public', 'data', COLLECTION_NAME);
+      const q = query(playersRef);
       
-      const unsubscribe = onSnapshot(playersRef, 
+      const unsubscribe = onSnapshot(q, 
         (snapshot) => {
           const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
           data.sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
@@ -111,13 +111,13 @@ export default function App() {
           setLoading(false);
         },
         (err) => {
-          console.error("Firestore loading error:", err);
+          console.error("Firestore 로드 에러:", err);
           setLoading(false);
         }
       );
       return () => unsubscribe();
     } catch (error) {
-      console.error("Invalid Firestore Reference:", error);
+      console.error("Firestore 참조 구성 실패:", error);
       setLoading(false);
     }
   }, [user]);
@@ -178,8 +178,8 @@ export default function App() {
         if (oldPlayer && oldPlayer.status !== formData.status) {
           updatedHistory.push({ 
             date: timestamp, 
-            from: oldPlayer.status, 
-            to: formData.status, 
+            from: String(oldPlayer.status), 
+            to: String(formData.status), 
             note: String(formData.details || (formData.status === '정상 훈련' ? '복귀 완료' : '상태 변경'))
           });
         }
@@ -195,7 +195,7 @@ export default function App() {
       setIsModalOpen(false);
       setEditingId(null);
     } catch (e) {
-      alert("데이터 저장 권한이 부족하거나 오류가 발생했습니다.");
+      alert("데이터 저장 중 오류가 발생했습니다.");
     }
   };
 
@@ -225,7 +225,7 @@ export default function App() {
       setIsBulkModalOpen(false);
       setBulkText('');
     } catch (e) {
-      alert("데이터 일괄 등록 권한이 부족합니다.");
+      alert("일괄 등록 중 오류가 발생했습니다.");
     }
     setLoading(false);
   };
@@ -244,13 +244,13 @@ export default function App() {
 
   if (loading) return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-white">
-      <div className="w-10 h-10 border-4 border-[#C8102E] border-t-transparent rounded-full animate-spin mb-4"></div>
-      <p className="text-[#C8102E] font-black text-xs tracking-widest animate-pulse uppercase italic">Busan Ipark Medical System</p>
+      <div className="w-12 h-12 border-4 border-[#C8102E] border-t-transparent rounded-full animate-spin mb-6"></div>
+      <p className="text-[#C8102E] font-black text-sm tracking-widest animate-pulse uppercase italic">Busan Ipark Medical System</p>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans tracking-tight">
+    <div className="min-h-screen bg-slate-50 font-sans tracking-tight pb-20">
       <header className="bg-[#C8102E] text-white sticky top-0 z-40 shadow-xl">
         <div className="max-w-7xl mx-auto px-6 py-6 flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -258,12 +258,12 @@ export default function App() {
                <Shield size={32} />
              </div>
              <div>
-               <h1 className="text-2xl font-black tracking-tighter uppercase italic leading-none">부산아이파크</h1>
-               <p className="text-[10px] font-bold opacity-60 tracking-widest mt-1 uppercase">Youth Medical Management</p>
+               <h1 className="text-2xl font-black tracking-tighter uppercase italic leading-none text-white">부산아이파크</h1>
+               <p className="text-[10px] font-bold opacity-60 tracking-widest mt-1 uppercase text-white">Youth Medical Management</p>
              </div>
           </div>
           <div className="text-right">
-            <p className="text-xl font-black tabular-nums">{currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+            <p className="text-xl font-black tabular-nums text-white">{currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
           </div>
         </div>
         <div className="max-w-7xl mx-auto px-6 flex gap-1 overflow-x-auto no-scrollbar">
@@ -315,7 +315,7 @@ export default function App() {
                       <p className="text-[10px] font-bold text-slate-400 uppercase leading-none">{String(p.team || '')} · {String(p.position || '')}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-[9px] font-black text-orange-600 uppercase mb-1 italic leading-none">Return</p>
+                      <p className="text-[9px] font-black text-orange-600 uppercase mb-1 italic leading-none font-bold">Return</p>
                       <p className="text-sm font-black text-slate-700 leading-none">{String(p.expectedReturn || '')}</p>
                     </div>
                   </div>
@@ -337,8 +337,8 @@ export default function App() {
             />
           </div>
           <div className="flex gap-3 w-full md:w-auto">
-            <button onClick={() => setIsBulkModalOpen(true)} className="flex-1 md:flex-none bg-slate-800 text-white px-8 py-4.5 rounded-[1.5rem] font-black text-xs flex items-center justify-center gap-2 hover:bg-slate-900 shadow-lg active:scale-95 transition-all"><ClipboardCheck size={16} /> 일괄 등록</button>
-            <button onClick={() => { setEditingId(null); setFormData({ team: activeTab !== '전체 대시보드' ? activeTab : 'U18', name: '', position: 'MF', status: '정상 훈련', absenceCategory: 'injury', bodyPart: '', details: '', expectedReturn: '', history: [] }); setIsModalOpen(true); }} className="flex-1 md:flex-none bg-[#C8102E] text-white px-10 py-4.5 rounded-[1.5rem] font-black text-xs flex items-center justify-center gap-2 shadow-xl hover:bg-red-800 transition-all active:scale-95"><Plus size={18} /> 선수 추가</button>
+            <button onClick={() => setIsBulkModalOpen(true)} className="flex-1 md:flex-none bg-slate-800 text-white px-8 py-5 rounded-[1.5rem] font-black text-xs flex items-center justify-center gap-2 hover:bg-slate-900 shadow-lg active:scale-95 transition-all"><ClipboardCheck size={16} /> 일괄 등록</button>
+            <button onClick={() => { setEditingId(null); setFormData({ team: activeTab !== '전체 대시보드' ? activeTab : 'U18', name: '', position: 'MF', status: '정상 훈련', absenceCategory: 'injury', bodyPart: '', details: '', expectedReturn: '', history: [] }); setIsModalOpen(true); }} className="flex-1 md:flex-none bg-[#C8102E] text-white px-10 py-5 rounded-[1.5rem] font-black text-xs flex items-center justify-center gap-2 shadow-xl hover:bg-red-800 transition-all active:scale-95"><Plus size={18} /> 선수 추가</button>
           </div>
         </div>
 
@@ -352,13 +352,13 @@ export default function App() {
                 <div className="absolute top-0 left-0 w-2 h-full bg-[#C8102E] opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 <div className="flex items-center justify-between mb-8">
                   <div className="flex gap-2 items-center text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">
-                    <span className="bg-slate-100 px-2.5 py-1 rounded-lg text-slate-500">{String(player.position || '')}</span>
-                    <span>{String(player.team || '')}</span>
+                    <span className="bg-slate-100 px-2.5 py-1 rounded-lg text-slate-500 font-bold">{String(player.position || '')}</span>
+                    <span className="font-bold">{String(player.team || '')}</span>
                   </div>
                   <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-all">
                     <button 
                       onClick={() => openEditModal(player)} 
-                      className="px-4 py-1.5 text-blue-500 bg-blue-50 rounded-lg hover:bg-blue-500 hover:text-white text-[11px] font-black transition-all shadow-sm"
+                      className="px-4 py-2 text-blue-500 bg-blue-50 rounded-lg hover:bg-blue-500 hover:text-white text-[11px] font-black transition-all shadow-sm"
                     >
                       수정
                     </button>
@@ -388,7 +388,7 @@ export default function App() {
           <div className="bg-white rounded-[3.5rem] w-full max-w-lg p-12 relative z-10 shadow-2xl flex flex-col max-h-[85vh]">
             <div className="flex justify-between items-center mb-10 shrink-0">
               <h2 className="text-2xl font-black uppercase tracking-tighter leading-none">{String(selectedPlayerForHistory.name || '')} History</h2>
-              <button onClick={() => setIsHistoryModalOpen(false)} className="p-3 bg-slate-100 rounded-full hover:bg-slate-200 transition-colors shadow-inner"><X size={24} className="text-slate-400" /></button>
+              <button onClick={() => setIsHistoryModalOpen(false)} className="p-3 bg-slate-100 rounded-full hover:bg-slate-200 transition-colors shadow-inner text-slate-400 hover:text-slate-600"><X size={24} /></button>
             </div>
             <div className="flex-1 overflow-y-auto no-scrollbar space-y-8 pr-2 relative">
                <div className="absolute left-[7px] top-2 bottom-0 w-0.5 bg-slate-100"></div>
@@ -411,64 +411,72 @@ export default function App() {
         </div>
       )}
 
-      {/* 일괄 등록 모달 */}
+      {/* 일괄 등록 모달 (크기 대폭 확대: max-w-3xl) */}
       {isBulkModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsBulkModalOpen(false)}></div>
-          <div className="bg-white rounded-[3.5rem] w-full max-w-xl p-12 relative z-10 shadow-2xl space-y-8">
-            <h2 className="text-2xl font-black uppercase italic leading-none">명단 일괄 등록</h2>
-            <p className="text-xs font-bold text-[#C8102E] italic leading-none">이름만 한 줄에 한 명씩 입력해 주세요.</p>
-            <textarea className="w-full h-80 p-8 bg-slate-50 rounded-[2.5rem] outline-none font-bold text-sm resize-none focus:ring-4 focus:ring-[#C8102E]/5 border-none transition-all shadow-inner" placeholder="김부산&#10;이파크" value={bulkText} onChange={e => setBulkText(e.target.value)}></textarea>
-            <div className="flex gap-4">
-              <button onClick={() => setIsBulkModalOpen(false)} className="flex-1 py-6 bg-slate-100 rounded-[1.5rem] font-black text-slate-500 shadow-inner transition-colors">취소</button>
-              <button onClick={handleBulkAdd} className="flex-[2] py-6 bg-[#C8102E] text-white rounded-[2rem] font-black text-lg shadow-xl hover:bg-red-800 transition-all active:scale-95 uppercase tracking-widest">일괄 등록 시작</button>
+          <div className="bg-white rounded-[3.5rem] w-full max-w-3xl p-12 relative z-10 shadow-2xl space-y-8">
+            <div className="flex justify-between items-center mb-2">
+              <h2 className="text-3xl font-black uppercase italic leading-none">명단 일괄 등록</h2>
+              <button onClick={() => setIsBulkModalOpen(false)} className="text-slate-400 hover:text-slate-600"><X size={32} /></button>
+            </div>
+            <p className="text-sm font-bold text-[#C8102E] italic leading-none">이름만 한 줄에 한 명씩 입력해 주세요. 입력칸이 넉넉하니 편하게 작성하세요.</p>
+            <textarea 
+              className="w-full h-[500px] p-10 bg-slate-50 rounded-[3rem] outline-none font-bold text-xl resize-none focus:ring-4 focus:ring-[#C8102E]/5 border-none transition-all shadow-inner" 
+              placeholder="김부산&#10;이파크&#10;박축구" 
+              value={bulkText} 
+              onChange={e => setBulkText(e.target.value)}
+            ></textarea>
+            <div className="flex gap-6">
+              <button onClick={() => setIsBulkModalOpen(false)} className="flex-1 py-7 bg-slate-100 rounded-[2.5rem] font-black text-slate-500 shadow-inner transition-colors text-lg">취소</button>
+              <button onClick={handleBulkAdd} className="flex-[2] py-7 bg-[#C8102E] text-white rounded-[2.5rem] font-black text-xl shadow-xl hover:bg-red-800 transition-all active:scale-95 uppercase tracking-widest">일괄 등록 시작</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* 선수 추가/수정 모달 */}
+      {/* 선수 추가/수정 모달 (크기 확대: max-w-2xl) */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in zoom-in duration-300">
           <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => { setIsModalOpen(false); setEditingId(null); }}></div>
-          <div className="bg-white rounded-[4rem] w-full max-w-lg p-12 relative z-10 shadow-2xl space-y-10 max-h-[92vh] overflow-y-auto no-scrollbar">
+          <div className="bg-white rounded-[4rem] w-full max-w-2xl p-14 relative z-10 shadow-2xl space-y-12 max-h-[92vh] overflow-y-auto no-scrollbar">
             <div className="flex justify-between items-center shrink-0">
-              <h2 className="text-3xl font-black tracking-tight leading-none text-slate-800 uppercase italic leading-none">{editingId ? '선수 수정' : '신규 등록'}</h2>
-              <div className="flex gap-2">
+              <h2 className="text-4xl font-black tracking-tight leading-none text-slate-800 uppercase italic leading-none">{editingId ? '선수 수정' : '신규 등록'}</h2>
+              <div className="flex gap-3">
                 {editingId && (
-                  <button onClick={() => deletePlayer(editingId)} className="px-4 py-2 bg-rose-50 text-rose-600 rounded-2xl text-[10px] font-black hover:bg-rose-600 hover:text-white transition-all shadow-sm">데이터 삭제</button>
+                  <button onClick={() => deletePlayer(editingId)} className="px-6 py-3 bg-rose-50 text-rose-600 rounded-2xl text-xs font-black hover:bg-rose-600 hover:text-white transition-all shadow-sm">데이터 삭제</button>
                 )}
-                <button onClick={() => { setIsModalOpen(false); setEditingId(null); }} className="p-3 bg-slate-100 rounded-full hover:bg-slate-200 transition-colors"><X size={24} className="text-slate-400" /></button>
+                <button onClick={() => { setIsModalOpen(false); setEditingId(null); }} className="p-4 bg-slate-100 rounded-full hover:bg-slate-200 transition-colors shadow-inner text-slate-400 hover:text-slate-600"><X size={32} /></button>
               </div>
             </div>
-            <div className="space-y-10">
-              <div className="grid grid-cols-2 gap-6">
-                <div className="space-y-3">
-                  <label className="text-[10px] font-black text-slate-400 ml-2 uppercase tracking-[0.2em] leading-none">Age Category</label>
-                  <select className="w-full p-5 bg-slate-50 border-none rounded-[1.5rem] font-black shadow-inner outline-none focus:ring-2 focus:ring-[#C8102E]/20" value={formData.team} onChange={e => setFormData({...formData, team: e.target.value})}>{TEAMS.map(t => <option key={t}>{t}</option>)}</select>
+            <div className="space-y-12">
+              <div className="grid grid-cols-2 gap-8">
+                <div className="space-y-4">
+                  <label className="text-xs font-black text-slate-400 ml-2 uppercase tracking-[0.2em] leading-none">Age Category</label>
+                  <select className="w-full p-6 bg-slate-50 border-none rounded-[2rem] font-black text-lg shadow-inner outline-none focus:ring-2 focus:ring-[#C8102E]/20" value={formData.team} onChange={e => setFormData({...formData, team: e.target.value})}>{TEAMS.map(t => <option key={t}>{t}</option>)}</select>
                 </div>
-                <div className="space-y-3">
-                  <label className="text-[10px] font-black text-slate-400 ml-2 uppercase tracking-[0.2em] leading-none">Position</label>
-                  <select className="w-full p-5 bg-slate-50 border-none rounded-[1.5rem] font-black shadow-inner outline-none focus:ring-2 focus:ring-[#C8102E]/20" value={formData.position} onChange={e => setFormData({...formData, position: e.target.value})}>{POSITIONS.map(p => <option key={p}>{p}</option>)}</select>
+                <div className="space-y-4">
+                  <label className="text-xs font-black text-slate-400 ml-2 uppercase tracking-[0.2em] leading-none">Position</label>
+                  <select className="w-full p-6 bg-slate-50 border-none rounded-[2rem] font-black text-lg shadow-inner outline-none focus:ring-2 focus:ring-[#C8102E]/20" value={formData.position} onChange={e => setFormData({...formData, position: e.target.value})}>{POSITIONS.map(p => <option key={p}>{p}</option>)}</select>
                 </div>
               </div>
-              <div className="space-y-3">
-                <label className="text-[10px] font-black text-slate-400 ml-2 uppercase tracking-[0.2em] leading-none">Full Name</label>
-                <input type="text" placeholder="선수 성명 입력" className="w-full p-6 bg-slate-50 border-none rounded-[1.5rem] text-2xl font-black shadow-inner outline-none focus:ring-2 focus:ring-[#C8102E]/20 transition-all" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+              <div className="space-y-4">
+                <label className="text-xs font-black text-slate-400 ml-2 uppercase tracking-[0.2em] leading-none">Full Name</label>
+                <input type="text" placeholder="선수 성명 입력" className="w-full p-8 bg-slate-50 border-none rounded-[2.5rem] text-4xl font-black shadow-inner outline-none focus:ring-2 focus:ring-[#C8102E]/20 transition-all placeholder:text-slate-200" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
               </div>
-              <div className="space-y-5">
-                <label className="text-[10px] font-black text-slate-400 ml-2 uppercase tracking-[0.2em] leading-none">Training Status</label>
-                <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-6">
+                <label className="text-xs font-black text-slate-400 ml-2 uppercase tracking-[0.2em] leading-none font-bold">Training Status</label>
+                <div className="grid grid-cols-2 gap-5">
                   {STATUS_OPTIONS.map(opt => {
                     const OptIcon = opt.icon;
                     return (
                       <button 
                         key={opt.value} 
                         onClick={() => setFormData({...formData, status: opt.value})} 
-                        className={`p-6 rounded-[2rem] text-xs font-black border transition-all ${formData.status === opt.value ? 'bg-slate-900 text-white border-transparent shadow-xl scale-[1.03]' : 'bg-white text-gray-400 border-slate-100 hover:bg-slate-50'}`}
+                        className={`p-8 rounded-[2.5rem] text-sm font-black border transition-all ${formData.status === opt.value ? 'bg-slate-900 text-white border-transparent shadow-2xl scale-[1.05]' : 'bg-white text-gray-400 border-slate-100 hover:bg-slate-50 shadow-sm'}`}
                       >
-                        <div className="flex flex-col items-center gap-3">
-                          <OptIcon size={20} />
+                        <div className="flex flex-col items-center gap-4">
+                          <OptIcon size={24} />
                           {opt.value}
                         </div>
                       </button>
@@ -477,35 +485,35 @@ export default function App() {
                 </div>
               </div>
               {formData.status !== '정상 훈련' && (
-                <div className="p-8 bg-rose-50 rounded-[3rem] space-y-8 border border-rose-100 shadow-sm animate-in slide-in-from-top-6 duration-500">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-[9px] font-black text-rose-800 ml-2 uppercase tracking-tighter leading-none font-bold">결장 사유</label>
-                      <select className="w-full p-4.5 bg-white border-none rounded-2xl font-bold text-xs shadow-sm focus:ring-2 focus:ring-rose-200 outline-none transition-all" value={formData.absenceCategory} onChange={e => setFormData({...formData, absenceCategory: e.target.value})}>{ABSENCE_REASONS.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}</select>
+                <div className="p-10 bg-rose-50 rounded-[4rem] space-y-10 border border-rose-100 shadow-sm animate-in slide-in-from-top-6 duration-500">
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="space-y-3">
+                      <label className="text-[10px] font-black text-rose-800 ml-3 uppercase tracking-tighter leading-none font-black">결장 사유</label>
+                      <select className="w-full p-5 bg-white border-none rounded-2xl font-bold text-sm shadow-sm focus:ring-2 focus:ring-rose-200 outline-none transition-all" value={formData.absenceCategory} onChange={e => setFormData({...formData, absenceCategory: e.target.value})}>{ABSENCE_REASONS.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}</select>
                     </div>
-                    <div className="space-y-2">
-                      <label className="text-[9px] font-black text-rose-800 ml-2 uppercase tracking-tighter leading-none font-bold">부상 부위 (직접 입력)</label>
+                    <div className="space-y-3">
+                      <label className="text-[10px] font-black text-rose-800 ml-3 uppercase tracking-tighter leading-none font-black">부상 부위 (직접 입력)</label>
                       <input 
                         type="text" 
                         placeholder="예: 발목, 서혜부 등" 
-                        className="w-full p-4.5 bg-white border-none rounded-2xl font-bold text-xs shadow-sm focus:ring-2 focus:ring-rose-200 outline-none transition-all" 
+                        className="w-full p-5 bg-white border-none rounded-2xl font-bold text-sm shadow-sm focus:ring-2 focus:ring-rose-200 outline-none transition-all" 
                         value={formData.bodyPart} 
                         onChange={e => setFormData({...formData, bodyPart: e.target.value})} 
                       />
                     </div>
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-rose-800 ml-2 uppercase tracking-tighter leading-none font-bold">상세 메모</label>
-                    <textarea placeholder="상세 내용을 기록하세요" className="w-full p-5 border-none rounded-2xl text-xs font-bold resize-none bg-white shadow-sm focus:ring-2 focus:ring-rose-200 outline-none transition-all" rows="2" value={formData.details} onChange={e => setFormData({...formData, details: e.target.value})}></textarea>
+                  <div className="space-y-3">
+                    <label className="text-[11px] font-black text-rose-800 ml-3 uppercase tracking-tighter leading-none font-black">상세 메모</label>
+                    <textarea placeholder="부상 정도나 특이사항을 상세히 기록하세요" className="w-full p-8 border-none rounded-[2rem] text-sm font-bold resize-none bg-white shadow-sm focus:ring-2 focus:ring-rose-200 outline-none transition-all" rows="3" value={formData.details} onChange={e => setFormData({...formData, details: e.target.value})}></textarea>
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-[9px] font-black text-rose-800 ml-2 uppercase tracking-tighter leading-none font-bold">복귀 예정일</label>
-                    <input type="date" className="w-full p-5 border-none rounded-2xl text-xs font-black bg-white shadow-sm focus:ring-2 focus:ring-rose-200 outline-none transition-all" value={formData.expectedReturn} onChange={e => setFormData({...formData, expectedReturn: e.target.value})} />
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-black text-rose-800 ml-3 uppercase tracking-tighter leading-none font-black">복귀 예정일</label>
+                    <input type="date" className="w-full p-5 border-none rounded-2xl text-sm font-black bg-white shadow-sm focus:ring-2 focus:ring-rose-200 outline-none transition-all" value={formData.expectedReturn} onChange={e => setFormData({...formData, expectedReturn: e.target.value})} />
                   </div>
                 </div>
               )}
             </div>
-            <button onClick={savePlayer} className="w-full py-8 bg-[#C8102E] text-white rounded-[2.5rem] font-black text-xl shadow-2xl hover:bg-red-800 transition-all active:scale-95 uppercase leading-none tracking-tighter">Save Medical Records</button>
+            <button onClick={savePlayer} className="w-full py-10 bg-[#C8102E] text-white rounded-[3rem] font-black text-2xl shadow-2xl hover:bg-red-800 transition-all active:scale-95 uppercase leading-none tracking-tighter">Save Medical Records</button>
           </div>
         </div>
       )}
