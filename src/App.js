@@ -1,13 +1,13 @@
 /* eslint-disable no-undef */
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
-  Shield, Activity, Search, Plus, Edit2, Trash2, X, AlertCircle, 
+  Shield, Activity, Search, Plus, AlertCircle, 
   CheckCircle2, Clock, HeartPulse, GraduationCap, Plane, Thermometer, 
-  UserPlus, FileText, PieChart, Download, Printer
+  FileText, PieChart
 } from 'lucide-react';
 import { initializeApp, getApps } from 'firebase/app';
 import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'firebase/auth';
-import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc } from 'firebase/firestore';
+import { getFirestore, collection, onSnapshot, doc, setDoc } from 'firebase/firestore';
 
 // --- Firebase 초기화 및 로컬 실행 대응 ---
 let app, auth, db;
@@ -45,7 +45,7 @@ const MOCK_DATA = [
 const TEAMS = ['U18', 'U15', 'U12', 'WFC U15'];
 const POSITIONS = ['FW', 'MF', 'DF', 'GK'];
 
-// 아이콘을 컴포넌트 자체로 저장하여 렌더링 오류를 방지합니다.
+// 아이콘 컴포넌트 자체를 저장
 const STATUS_OPTIONS = [
   { value: '정상 훈련', color: 'bg-emerald-100 text-emerald-800 border-emerald-200', icon: CheckCircle2 },
   { value: '부분 참여', color: 'bg-yellow-100 text-yellow-800 border-yellow-200', icon: Activity },
@@ -113,7 +113,6 @@ export default function App() {
   // 2. 데이터 동기화
   useEffect(() => {
     if (!isFirebaseReady || !user || !db) return;
-    // 경로 세그먼트를 명확히 하여 5개의 세그먼트가 되도록 합니다.
     const playersRef = collection(db, 'artifacts', appId, 'public', 'data', COLLECTION_NAME);
     const unsubscribe = onSnapshot(playersRef, (snapshot) => {
       const playersData = [];
@@ -224,32 +223,45 @@ export default function App() {
         )}
 
         <div className="flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm">
-          <div className="relative w-64">
-            <Search className="absolute left-3 top-3 w-4 h-4 text-gray-300" />
-            <input type="text" placeholder="선수 검색..." className="pl-10 pr-4 py-2 bg-gray-50 rounded-xl w-full text-sm outline-none font-bold" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+          <div className="flex gap-2 w-full sm:w-auto">
+            <div className="relative flex-1 sm:w-64">
+              <Search className="absolute left-3 top-3 w-4 h-4 text-gray-300" />
+              <input type="text" placeholder="선수 검색..." className="pl-10 pr-4 py-2 bg-gray-50 rounded-xl w-full text-sm outline-none font-bold" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+            </div>
+            <select className="px-3 py-2 bg-gray-50 rounded-xl text-xs font-bold border-none outline-none" value={filterPosition} onChange={e => setFilterPosition(e.target.value)}>
+              <option value="전체">모든 포지션</option>
+              {POSITIONS.map(p => <option key={p} value={p}>{p}</option>)}
+            </select>
           </div>
-          <button onClick={() => setIsModalOpen(true)} className="bg-[#C8102E] text-white px-6 py-2 rounded-xl font-black text-xs flex items-center gap-2"><Plus className="w-4 h-4" /> 선수 추가</button>
+          <button onClick={() => setIsModalOpen(true)} className="bg-[#C8102E] text-white px-6 py-2 rounded-xl font-black text-xs flex items-center gap-2 whitespace-nowrap"><Plus className="w-4 h-4" /> 선수 추가</button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredPlayers.map(player => (
-            <div key={player.id} className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <span className="text-[10px] bg-gray-100 px-2 py-0.5 rounded font-black text-gray-400 uppercase tracking-tighter">{player.position}</span>
-                  <h4 className="text-xl font-black text-gray-900 mt-1">{player.name}</h4>
+          {filteredPlayers.map(player => {
+            const statusCfg = STATUS_OPTIONS.find(s => s.value === player.status) || STATUS_OPTIONS[0];
+            const StatusIcon = statusCfg.icon;
+            const dDay = calculateDDay(player.expectedReturn);
+            return (
+              <div key={player.id} className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <span className="text-[10px] bg-gray-100 px-2 py-0.5 rounded font-black text-gray-400 uppercase tracking-tighter">{player.position}</span>
+                    <h4 className="text-xl font-black text-gray-900 mt-1">{player.name}</h4>
+                  </div>
+                  <span className="text-[10px] font-black text-gray-300 uppercase">{player.team}</span>
                 </div>
-                <span className="text-[10px] font-black text-gray-300 uppercase">{player.team}</span>
+                <div className="flex items-center gap-2 mb-4">
+                  <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black ${statusCfg.color}`}>
+                    <StatusIcon className="w-3 h-3" /> {player.status}
+                  </div>
+                  {player.status !== '정상 훈련' && dDay && (
+                    <div className="bg-gray-800 text-white text-[9px] px-2 py-1 rounded font-black">{dDay.text}</div>
+                  )}
+                </div>
+                {player.details && <p className="text-xs font-bold text-gray-500 line-clamp-2">{player.details}</p>}
               </div>
-              <div className="flex items-center gap-2 mb-4">
-                <div className={`px-3 py-1 rounded-full text-[10px] font-black ${player.status === '정상 훈련' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>{player.status}</div>
-                {player.status !== '정상 훈련' && calculateDDay(player.expectedReturn) && (
-                  <div className="bg-gray-800 text-white text-[9px] px-2 py-1 rounded font-black">{calculateDDay(player.expectedReturn).text}</div>
-                )}
-              </div>
-              {player.details && <p className="text-xs font-bold text-gray-500 line-clamp-2">{player.details}</p>}
-            </div>
-          ))}
+            );
+          })}
         </div>
       </main>
 
