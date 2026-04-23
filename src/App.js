@@ -1,3 +1,4 @@
+/* global __firebase_config, __app_id, __initial_auth_token */
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Shield, TrendingUp, Clock, Search, ClipboardCheck, 
@@ -10,9 +11,12 @@ import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged }
 import { getFirestore, collection, doc, onSnapshot, setDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 
 // --- Firebase 초기화 및 전역 설정 ---
-const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+// 빌드 에러 방지를 위해 window 객체 여부와 함께 안전하게 참조합니다.
+const configStr = typeof window !== 'undefined' && typeof __firebase_config !== 'undefined' ? __firebase_config : '{}';
+const firebaseConfig = JSON.parse(configStr);
+
 // RULE 1: appId에서 슬래시(/)를 제거하여 Firestore 세그먼트 개수 오류 방지
-const rawAppId = typeof __app_id !== 'undefined' ? __app_id : 'busan-ipark-medical-v10';
+const rawAppId = typeof window !== 'undefined' && typeof __app_id !== 'undefined' ? __app_id : 'busan-ipark-medical-v10';
 const appId = rawAppId.replace(/\//g, '_');
 
 let app, auth, db;
@@ -71,8 +75,9 @@ export default function App() {
 
     const performAuth = async () => {
       try {
-        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-          await signInWithCustomToken(auth, __initial_auth_token);
+        const token = typeof window !== 'undefined' && typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        if (token) {
+          await signInWithCustomToken(auth, token);
         } else {
           await signInAnonymously(auth);
         }
