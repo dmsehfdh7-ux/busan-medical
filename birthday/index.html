@@ -114,9 +114,9 @@ nav{display:flex;background:var(--card);border-top:1px solid var(--line);padding
 .lb .row button{background:rgba(255,255,255,.15);color:#fff;border-radius:999px;padding:8px 18px;font-family:var(--display);font-size:20px}
 
 /* 편지 */
-.paper{background:#FFFDF7;border-radius:18px;padding:22px 20px;box-shadow:0 10px 30px rgba(44,46,90,.08);background-image:repeating-linear-gradient(transparent 0 31px,#F1E3C9 31px 32px);background-position:0 10px;position:relative}
+.paper{background:#FFFDF7;border-radius:18px;padding:22px 20px;box-shadow:0 10px 30px rgba(44,46,90,.08);background-image:repeating-linear-gradient(transparent 0 29px,#F1E3C9 29px 30px);background-position:0 8px;position:relative}
 .paper::before{content:"";position:absolute;left:50%;top:-10px;width:90px;height:24px;transform:translateX(-50%) rotate(-3deg);background:var(--yellow);opacity:.8;border-radius:3px}
-.letter{font-family:var(--display);font-size:22px;line-height:32px;white-space:pre-wrap;min-height:200px;margin:0;color:#3A3550}
+.letter{font-family:var(--display);font-size:20px;line-height:30px;white-space:pre-wrap;min-height:200px;margin:0;color:#3A3550}
 .letter .cur{display:inline-block;width:2px;height:22px;background:var(--pink-deep);vertical-align:-4px;animation:blink 1s steps(2) infinite}
 @keyframes blink{50%{opacity:0}}
 .sign{text-align:right;font-family:var(--display);font-size:22px;color:var(--pink-deep);margin:8px 0 0}
@@ -135,6 +135,50 @@ nav{display:flex;background:var(--card);border-top:1px solid var(--line);padding
 .cp.used::after{content:"사용 완료";position:absolute;right:14px;top:10px;border:3px solid var(--pink-deep);color:var(--pink-deep);font-family:var(--display);font-size:22px;font-weight:700;padding:0 8px;border-radius:8px;transform:rotate(-12deg)}
 .hint{font-size:13px;color:var(--muted)}
 
+/* 미션 */
+.mission{position:fixed;inset:0;z-index:45;background:var(--bg);display:none;flex-direction:column;padding-block:calc(14px + env(safe-area-inset-top,0px)) calc(20px + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));overflow-y:auto}
+.mission.on{display:flex}
+.mhead{display:flex;align-items:center;gap:10px}
+.mhead img{width:44px;height:44px;border-radius:14px;object-fit:cover}
+.mhead h2{font-size:24px;flex:1;min-width:0}
+.dots{display:flex;gap:6px}
+.dots i{width:10px;height:10px;border-radius:50%;background:var(--line)}
+.dots i.done{background:var(--pink-deep)}
+.dots i.cur{background:var(--navy)}
+.mbody{flex:1;display:flex;flex-direction:column;gap:12px;margin-top:14px}
+.mtalk{background:var(--card);border-radius:18px;padding:12px 14px;font-family:var(--display);font-size:21px;line-height:1.3;color:var(--navy);border:1px solid var(--line)}
+.mtalk small{display:block;font-size:17px;color:var(--muted);margin-top:4px}
+.mem{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.mem .c{aspect-ratio:4/5;max-width:100%;perspective:600px}
+.mem .c div{position:relative;width:100%;height:100%;transition:transform .4s;transform-style:preserve-3d}
+.mem .c.open div,.mem .c.ok div{transform:rotateY(180deg)}
+.mem .c span,.mem .c img{position:absolute;inset:0;width:100%;height:100%;border-radius:10px;backface-visibility:hidden;-webkit-backface-visibility:hidden;object-fit:cover}
+.mem .c span{background:var(--pink);display:grid;place-items:center;font-family:var(--display);font-size:34px;color:#fff;font-weight:700}
+.mem .c img{transform:rotateY(180deg)}
+.mem .c.ok{opacity:.6}
+.hud{display:flex;justify-content:space-between;font-family:var(--display);font-size:24px;color:var(--navy);font-variant-numeric:tabular-nums}
+.arena{position:relative;flex:1;min-height:300px;background:linear-gradient(180deg,#E6F4EA,#CFEDE3);border-radius:22px;overflow:hidden;touch-action:none}
+.arena img{position:absolute;left:0;top:0;width:72px;height:72px;border-radius:50%;object-fit:cover;border:3px solid #fff;box-shadow:0 6px 16px rgba(0,0,0,.2);touch-action:none;user-select:none;-webkit-user-select:none;-webkit-user-drag:none;cursor:pointer}
+.puz{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:3px;width:min(100%,340px);aspect-ratio:1;max-width:100%;margin:0 auto;background:var(--line);border-radius:14px;overflow:hidden;padding:3px}
+.puz button{min-height:0;background-size:300% 300%;background-repeat:no-repeat;border-radius:6px;background-color:var(--card)}
+.puz button.blank{background-image:none!important;background:var(--bg)}
+.puzhint{width:72px;height:72px;border-radius:10px;object-fit:cover;margin:0 auto}
+.lock{display:flex;flex-direction:column;align-items:center;gap:14px}
+.lock .slots{display:flex;gap:10px}
+.lock .slots b{width:52px;height:64px;border-radius:14px;background:var(--card);border:2px solid var(--line);display:grid;place-items:center;font-family:var(--display);font-size:36px;color:var(--navy)}
+.lock.bad .slots b{border-color:var(--pink-deep);animation:shake .4s}
+.lock.ok .slots b{border-color:#1F9D6B;background:var(--mint)}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:min(100%,280px)}
+.pad button{height:54px;border-radius:14px;background:var(--card);font-family:var(--display);font-size:28px;color:var(--ink);border:1px solid var(--line)}
+.pad button:active{background:var(--line)}
+/* 스크래치 쿠폰 */
+.scratch{position:absolute;inset:0;z-index:2;border-radius:18px;touch-action:none;cursor:pointer}
+/* 타임캡슐 */
+.capsule{background:var(--card);border-radius:22px;padding:16px;border:1px dashed var(--navy)}
+.capsule textarea{width:100%;max-width:100%;border:1px solid var(--line);border-radius:14px;padding:10px;font-family:var(--display);font-size:20px;background:var(--bg);color:var(--ink);resize:vertical;margin:8px 0;box-sizing:border-box}
+.sealed{font-family:var(--display);font-size:28px;color:var(--navy);text-align:center;padding:14px 0 6px}
+.sealed small{display:block;font-size:17px;color:var(--muted);margin-top:4px}
 canvas.fx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:70}
 @media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
 @media (min-width:600px){.app{max-width:480px;margin:0 auto;box-shadow:0 0 0 1px var(--line)}}
@@ -203,6 +247,11 @@ canvas.fx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-in
         <p class="sign" id="sign"></p>
       </div>
       <button class="btn ghost" id="skipLetter">한 번에 다 보기</button>
+      <div class="capsule" id="capsule">
+        <div class="eyebrow">1년 뒤 타임캡슐</div>
+        <h3 class="h-mid">2027년 11월 8일에 열려</h3>
+        <div id="capBody"></div>
+      </div>
     </section>
 
     <section class="view" id="v-coupons">
@@ -220,6 +269,17 @@ canvas.fx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-in
   </nav>
 </div>
 
+<div class="mission" id="mission" role="dialog" aria-label="닌토의 미션">
+  <div class="mhead"><img data-p="p01" alt=""><h2 id="mTitle">닌토의 미션</h2><div class="dots" id="mDots"></div></div>
+  <div class="mbody" id="mBody"></div>
+</div>
+<div class="intro" id="today" hidden style="z-index:48">
+  <img class="bunny" data-p="p01" alt="닌토">
+  <div class="date">11 . 08</div>
+  <h1>오늘이야!<small>채채 생일 축하해 🎂</small></h1>
+  <p class="sub">닌토가 케이크 들고 기다렸어</p>
+  <button class="btn" id="todayBtn">들어가기 🎉</button>
+</div>
 <div class="lb" id="lb" role="dialog" aria-label="사진 크게 보기">
   <img id="lbImg" src="" alt="">
   <p id="lbCap"></p>
@@ -238,6 +298,7 @@ canvas.fx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-in
 <script src="photos/p09.js"></script>
 <script src="photos/p10.js"></script>
 <script src="photos/p11.js"></script>
+<script src="photos/sq.js"></script>
 <script>
 /* ======= 여기만 고치면 내용이 바뀌어요 ======= */
 const CONFIG = {
@@ -271,6 +332,9 @@ const CONFIG = {
 태어나 줘서 고맙고, 내 옆에 있어 줘서 고마워.
 사랑해.`,
   sign: '너를 제일 좋아하는 사람이',
+  lockCode: '1208', // 마지막 자물쇠 비밀번호
+  lockHint: '우리가 처음 만난 날 (월일 4자리)',
+  capsuleOpen: { y: 2027, m: 11, d: 8 },
   coupons: [
     { tag: '데이트', title: '데이트 코스 전권 위임', desc: '가고 싶은 곳, 먹고 싶은 것 전부 채채 맘대로.' },
     { tag: '맛집', title: '맛집 내가 쏨', desc: '메뉴 가격 상관없이 결제는 내가.' },
@@ -280,8 +344,11 @@ const CONFIG = {
 };
 /* ======================================= */
 
+if (location.hash === '#reset') { try { ['mission', 'coupons-used', 'scratched', 'capsule'].forEach(k => localStorage.removeItem(k)); } catch {} location.hash = ''; }
+
 const $ = (s, el = document) => el.querySelector(s);
 const PH = window.PHOTOS || {};
+const photo = k => PH[k] || '';
 CONFIG.photos.forEach(p => { p.src = PH[p.src] || p.src; });
 document.querySelectorAll('img[data-p]').forEach(i => { i.src = PH[i.dataset.p] || ''; });
 const KST = () => new Date(Date.now() + 9 * 3600e3); // UTC getters below read Korean time
@@ -293,6 +360,7 @@ function showView(v) {
   document.querySelectorAll('.tab').forEach(t => t.setAttribute('aria-selected', String(t.dataset.v === v)));
   $('#main').scrollTop = 0;
   if (v === 'letter') startLetter();
+  if (v === 'coupons') requestAnimationFrame(() => scratchInits.forEach(f => f()));
 }
 
 /* 카운트다운 */
@@ -411,6 +479,37 @@ $('#skipLetter').addEventListener('click', () => { clearTimeout(typer); typed = 
 /* 쿠폰 */
 const store = { get(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
 const used = store.get('coupons-used') || {};
+const scr = store.get('scratched') || {};
+const scratchInits = [];
+function addScratch(card, i) {
+  if (scr[i]) return;
+  const cv = document.createElement('canvas'); cv.className = 'scratch'; card.appendChild(cv);
+  const c = cv.getContext('2d');
+  let inited = false;
+  const init = () => {
+    if (inited || !cv.isConnected) return;
+    const r = card.getBoundingClientRect(); if (r.width < 10) return; inited = true;
+    cv.width = Math.round(r.width); cv.height = Math.round(r.height);
+    c.fillStyle = '#C9CDD6'; c.fillRect(0, 0, cv.width, cv.height);
+    for (let k = 0; k < 40; k++) { c.fillStyle = 'rgba(255,255,255,.35)'; c.fillRect(Math.random() * cv.width, Math.random() * cv.height, 3, 3); }
+    c.fillStyle = '#6B7185'; c.font = '700 24px Gaegu, sans-serif'; c.textAlign = 'center'; c.fillText('긁어서 확인 ✨', cv.width / 2, cv.height / 2 + 9);
+  };
+  scratchInits.push(init); requestAnimationFrame(init);
+  let down = false, n = 0;
+  const sc = e => {
+    const r = cv.getBoundingClientRect();
+    c.globalCompositeOperation = 'destination-out'; c.beginPath(); c.arc(e.clientX - r.left, e.clientY - r.top, 22, 0, 7); c.fill();
+    if (++n % 6 === 0) {
+      const d = c.getImageData(0, 0, cv.width, cv.height).data; let cl = 0, tot = 0;
+      for (let k = 3; k < d.length; k += 64) { tot++; if (d[k] === 0) cl++; }
+      if (cl / tot > .5) { cv.remove(); scr[i] = 1; store.set('scratched', scr); burst(.5, .5, 50); }
+    }
+  };
+  cv.addEventListener('pointerdown', e => { down = true; cv.setPointerCapture(e.pointerId); sc(e); });
+  cv.addEventListener('pointermove', e => { if (down) sc(e); });
+  cv.addEventListener('pointerup', () => down = false);
+  cv.addEventListener('pointercancel', () => down = false);
+}
 const cw = $('#coupons');
 CONFIG.coupons.forEach((c, i) => {
   const d = document.createElement('div'); d.className = 'cp' + (used[i] ? ' used' : '');
@@ -435,7 +534,7 @@ CONFIG.coupons.forEach((c, i) => {
       act.appendChild(b);
     }
   };
-  render(); cw.appendChild(d);
+  render(); cw.appendChild(d); addScratch(d, i);
 });
 
 /* 색종이 */
@@ -455,7 +554,7 @@ function loop() {
   parts = parts.filter(p => p.life > 0);
   for (const p of parts) {
     p.x += p.vx; p.y += p.vy; p.vy += p.g; p.vx *= .99; p.rot += p.vr; p.life--;
-    ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.globalAlpha = Math.min(1, p.life / 30); ctx.fillStyle = p.c; ctx.fillRect(-p.r / 2, -p.r / 4, p.r, p.r / 2); ctx.restore();
+    ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.globalAlpha = Math.min(1, p.life / 30); ctx.fillStyle = p.c; if (p.dot) { ctx.beginPath(); ctx.arc(0, 0, p.r, 0, 7); ctx.fill(); } else ctx.fillRect(-p.r / 2, -p.r / 4, p.r, p.r / 2); ctx.restore();
   }
   if (parts.length) requestAnimationFrame(loop); else burst.running = false;
 }
@@ -482,11 +581,171 @@ function setMusic(on) {
 }
 $('#musicBtn').addEventListener('click', () => setMusic(!playing));
 
+/* 폭죽 */
+function fire(px, py) {
+  const col = COLORS[Math.floor(Math.random() * 5)];
+  for (let i = 0; i < 70; i++) {
+    const a = Math.random() * Math.PI * 2, v = 2 + Math.random() * 5;
+    parts.push({ x: innerWidth * px, y: innerHeight * py, vx: Math.cos(a) * v, vy: Math.sin(a) * v, g: .05, r: 3, c: i % 3 ? col : '#fff', rot: 0, vr: 0, life: 60 + Math.random() * 40, dot: 1 });
+  }
+  if (!burst.running) { burst.running = true; requestAnimationFrame(loop); }
+}
+function fireworks(n) { for (let k = 0; k < n; k++) setTimeout(() => fire(.15 + Math.random() * .7, .12 + Math.random() * .38), k * 450); }
+
+/* ===== 닌토의 미션: 생일에 열린 뒤 4단계를 깨야 들어갈 수 있음 ===== */
+const prog = store.get('mission') || { done: 0 };
+const M_TITLES = ['사진 짝 맞추기', '닌토 잡기', '사진 퍼즐', '마지막 자물쇠'];
+const STAGES = [memoryStage, catchStage, puzzleStage, lockStage];
+const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+function isBirthdayToday() { const n = KST(); return n.getUTCMonth() + 1 === CONFIG.birth.m && n.getUTCDate() === CONFIG.birth.d; }
+function startMissions() { $('#mission').classList.add('on'); showStage(prog.done); }
+function showStage(i) {
+  $('#mTitle').textContent = `${i + 1}단계 · ${M_TITLES[i]}`;
+  $('#mDots').innerHTML = STAGES.map((_, k) => `<i class="${k < i ? 'done' : k === i ? 'cur' : ''}"></i>`).join('');
+  const body = $('#mBody'); body.innerHTML = '';
+  STAGES[i](body, () => {
+    prog.done = i + 1; store.set('mission', prog); burst(0.5, 0.4, 120);
+    if (prog.done >= STAGES.length) setTimeout(() => finishAll(true), 700); else setTimeout(() => showStage(prog.done), 1000);
+  });
+  $('#mission').scrollTop = 0;
+}
+function finishAll(celebrate) {
+  $('#mission').classList.remove('on');
+  if (isBirthdayToday()) showToday(); else if (celebrate) fireworks(6);
+}
+function talk(body, html) { const d = document.createElement('div'); d.className = 'mtalk'; d.innerHTML = html; body.appendChild(d); return d; }
+
+function memoryStage(body, done) {
+  talk(body, '닌토: 우리 사진 6쌍이 숨어 있어. 같은 사진 두 장을 찾아 봐!');
+  const keys = shuffle(['p04', 'p07', 'p08', 'p09', 'p10', 'p11'].flatMap(k => [k, k]));
+  const g = document.createElement('div'); g.className = 'mem'; body.appendChild(g);
+  let open = [], lock = false, matched = 0;
+  keys.forEach(k => {
+    const b = document.createElement('button'); b.className = 'c'; b.dataset.k = k; b.setAttribute('aria-label', '카드');
+    b.innerHTML = `<div><span>?</span><img src="${photo(k)}" alt=""></div>`;
+    b.addEventListener('click', () => {
+      if (lock || b.classList.contains('open') || b.classList.contains('ok')) return;
+      b.classList.add('open'); open.push(b);
+      if (open.length === 2) {
+        lock = true; const [x, y] = open, same = x.dataset.k === y.dataset.k;
+        setTimeout(() => {
+          if (same) { x.classList.add('ok'); y.classList.add('ok'); matched++; }
+          x.classList.remove('open'); y.classList.remove('open'); open = []; lock = false;
+          if (matched === 6) done();
+        }, same ? 300 : 800);
+      }
+    });
+    g.appendChild(b);
+  });
+}
+
+function catchStage(body, done) {
+  talk(body, '닌토: 나 잡아 봐라! 15초 안에 10번 터치하면 통과.');
+  const hud = document.createElement('div'); hud.className = 'hud'; body.appendChild(hud);
+  const ar = document.createElement('div'); ar.className = 'arena'; body.appendChild(ar);
+  const n = document.createElement('img'); n.src = photo('p01'); n.alt = '닌토'; n.draggable = false; ar.appendChild(n);
+  const start = document.createElement('button'); start.className = 'btn'; start.textContent = '시작!'; start.style.alignSelf = 'center'; body.appendChild(start);
+  let hits = 0, left = 15, x = 40, y = 40, vx = 2.4, vy = 1.9, raf = 0, timer = 0, running = false;
+  const draw = () => { hud.innerHTML = `<span>잡은 횟수 ${hits}/10</span><span>${left}초</span>`; };
+  const place = () => { n.style.transform = `translate(${x}px,${y}px)`; };
+  const move = () => {
+    const W = ar.clientWidth - 72, H = ar.clientHeight - 72;
+    x += vx; y += vy;
+    if (x < 0 || x > W) { vx = -vx; x = Math.max(0, Math.min(W, x)); }
+    if (y < 0 || y > H) { vy = -vy; y = Math.max(0, Math.min(H, y)); }
+    place(); if (running) raf = requestAnimationFrame(move);
+  };
+  draw(); place();
+  n.addEventListener('pointerdown', e => {
+    e.preventDefault(); if (!running) return;
+    hits++; vx *= 1.18; vy *= 1.18;
+    const r = ar.getBoundingClientRect();
+    burst((r.left + x + 36) / innerWidth, (r.top + y + 36) / innerHeight, 18);
+    x = Math.random() * (ar.clientWidth - 72); y = Math.random() * (ar.clientHeight - 72); place(); draw();
+    if (hits >= 10) { running = false; cancelAnimationFrame(raf); clearInterval(timer); hud.innerHTML = '<span>잡았다!</span><span>통과</span>'; done(); }
+  });
+  start.addEventListener('click', () => {
+    hits = 0; left = 15; vx = 2.4 * (Math.random() < .5 ? 1 : -1); vy = 1.9; running = true; start.hidden = true; draw(); move();
+    timer = setInterval(() => {
+      left--; draw();
+      if (left <= 0) { running = false; cancelAnimationFrame(raf); clearInterval(timer); start.textContent = '아깝다, 다시!'; start.hidden = false; }
+    }, 1000);
+  });
+}
+
+function puzzleStage(body, done) {
+  talk(body, '닌토: 사진이 흩어졌어. 빈칸 옆 조각을 눌러서 옮겨 맞춰 봐.');
+  const hint = document.createElement('img'); hint.className = 'puzhint'; hint.src = photo('sq'); hint.alt = '완성 사진'; body.appendChild(hint);
+  const g = document.createElement('div'); g.className = 'puz'; body.appendChild(g);
+  let tiles = [0, 1, 2, 3, 4, 5, 6, 7, 8], solved = false; // tiles[칸] = 조각 번호, 8 = 빈칸
+  const blankAt = () => tiles.indexOf(8);
+  const adj = (a, b) => Math.abs(Math.floor(a / 3) - Math.floor(b / 3)) + Math.abs(a % 3 - b % 3) === 1;
+  const isSolved = () => tiles.every((t, i) => t === i);
+  do { for (let k = 0; k < 150; k++) { const b = blankAt(); const c = [0, 1, 2, 3, 4, 5, 6, 7, 8].filter(p => adj(p, b)); const p = c[Math.floor(Math.random() * c.length)]; [tiles[b], tiles[p]] = [tiles[p], tiles[b]]; } } while (isSolved());
+  const render = () => {
+    g.innerHTML = '';
+    tiles.forEach((t, pos) => {
+      const b = document.createElement('button'); b.setAttribute('aria-label', `조각 ${pos + 1}`);
+      if (t === 8 && !solved) b.className = 'blank';
+      else { b.style.backgroundImage = `url("${photo('sq')}")`; b.style.backgroundPosition = `${(t % 3) * 50}% ${Math.floor(t / 3) * 50}%`; }
+      b.addEventListener('click', () => {
+        if (solved) return; const bl = blankAt(); if (!adj(pos, bl)) return;
+        [tiles[pos], tiles[bl]] = [tiles[bl], tiles[pos]];
+        if (isSolved()) { solved = true; render(); done(); } else render();
+      });
+      g.appendChild(b);
+    });
+  };
+  render();
+}
+
+function lockStage(body, done) {
+  talk(body, `닌토: 마지막이야. 비밀번호 4자리!<small>힌트: ${CONFIG.lockHint}</small>`);
+  const w = document.createElement('div'); w.className = 'lock'; body.appendChild(w);
+  let v = '';
+  w.innerHTML = `<div class="slots">${'<b></b>'.repeat(4)}</div><div class="pad">${[1, 2, 3, 4, 5, 6, 7, 8, 9, '', 0, '←'].map(k => k === '' ? '<span></span>' : `<button data-k="${k}">${k}</button>`).join('')}</div>`;
+  const slots = w.querySelectorAll('.slots b');
+  const draw = () => slots.forEach((s, i) => s.textContent = v[i] || '');
+  w.querySelectorAll('.pad button').forEach(b => b.addEventListener('click', () => {
+    if (w.classList.contains('ok')) return;
+    const k = b.dataset.k; if (k === '←') v = v.slice(0, -1); else if (v.length < 4) v += k; draw();
+    if (v.length === 4) {
+      if (v === CONFIG.lockCode) { w.classList.add('ok'); done(); }
+      else { w.classList.add('bad'); setTimeout(() => { w.classList.remove('bad'); v = ''; draw(); }, 500); }
+    }
+  }));
+}
+
+/* 생일 당일 전용 화면 */
+function showToday() {
+  let seen = false; try { seen = sessionStorage.getItem('todaySeen'); } catch {}
+  if (seen) return; $('#today').hidden = false; fireworks(5);
+}
+$('#todayBtn').addEventListener('click', () => { $('#today').hidden = true; try { sessionStorage.setItem('todaySeen', '1'); } catch {} fireworks(8); });
+
+/* 1년 뒤 타임캡슐 (이 폰에만 저장됨) */
+const CAP_OPEN = Date.UTC(CONFIG.capsuleOpen.y, CONFIG.capsuleOpen.m - 1, CONFIG.capsuleOpen.d);
+const esc = s => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+function renderCapsule() {
+  const b = $('#capBody'), cap = store.get('capsule'); b.innerHTML = '';
+  if (!cap) {
+    b.innerHTML = `<p class="sub">지금 적어 두면 봉인돼서 내년 생일에만 열려. 1년 뒤의 우리한테 한마디. (이 폰에만 저장돼)</p><textarea id="capText" rows="4" placeholder="1년 뒤에 읽을 메시지"></textarea><button class="btn ghost" id="capSave">봉인하기 🔒</button>`;
+    $('#capSave').addEventListener('click', () => { const t = $('#capText').value.trim(); if (!t) return; store.set('capsule', { t, at: kstMs() }); renderCapsule(); burst(.5, .6, 60); });
+  } else if (kstMs() < CAP_OPEN && location.hash !== '#preview') {
+    const days = Math.ceil((CAP_OPEN - kstMs()) / 864e5);
+    b.innerHTML = `<div class="sealed">🔒 봉인됨<small>D-${days} · 2027년 11월 8일에 열려</small></div>`;
+  } else {
+    b.innerHTML = `<p class="sub">1년 전에 남긴 메시지</p><p class="letter" style="min-height:0">${esc(cap.t)}</p>`;
+  }
+}
+renderCapsule();
+
 /* 인트로 */
 $('#openBtn').addEventListener('click', () => {
   $('#intro').classList.add('out');
   burst(0.5, 0.35, 180); setTimeout(() => burst(0.2, 0.3, 80), 300); setTimeout(() => burst(0.8, 0.3, 80), 600);
   setMusic(true);
+  if (prog.done >= STAGES.length || location.hash === '#preview') finishAll(false); else startMissions();
 });
 
 /* 설치형 앱(PWA) 오프라인 캐시: 지원되는 곳에서만 */
