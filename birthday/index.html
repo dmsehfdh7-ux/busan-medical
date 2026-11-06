@@ -56,6 +56,8 @@ nav{display:flex;background:var(--card);border-top:1px solid var(--line);padding
 .intro.out{opacity:0;transform:translateY(-6%);pointer-events:none}
 .intro img.bunny{width:150px;height:150px;border-radius:40px;object-fit:cover;box-shadow:0 14px 40px rgba(239,90,130,.3);animation:bob 2.6s ease-in-out infinite}
 @keyframes bob{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-9px) rotate(2deg)}}
+.lockcd{font-family:var(--display);font-size:30px;color:var(--navy);font-variant-numeric:tabular-nums;background:rgba(255,255,255,.7);border-radius:999px;padding:6px 22px}
+.lockcd b{font-size:40px;color:var(--pink-deep)}
 .intro .date{font-family:var(--display);font-size:22px;letter-spacing:.08em;color:var(--navy)}
 .intro h1{font-size:52px;color:var(--pink-deep)}
 .intro h1 small{display:block;font-size:26px;color:var(--ink)}
@@ -143,9 +145,10 @@ canvas.fx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-in
 <div class="intro" id="intro">
   <img class="bunny" data-p="p01" alt="토끼 닌자">
   <div class="date">2001 . 11 . 08</div>
-  <h1>채채야<br>생일 축하해<small>스물다섯 번째 생일</small></h1>
-  <p class="sub">오늘은 너를 위한 작은 앱이야</p>
-  <button class="btn" id="openBtn">열어보기 🎁</button>
+  <h1 id="introTitle">11월 8일에<br>열려요<small>채채 생일 당일 0시부터</small></h1>
+  <p class="sub" id="introSub">그때까지는 토끼가 지키고 있을게</p>
+  <div class="lockcd" id="lockcd"><b>--</b>일 <span>--:--:--</span></div>
+  <button class="btn" id="openBtn" hidden>열어보기 🎁</button>
 </div>
 
 <div class="app">
@@ -240,6 +243,7 @@ canvas.fx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-in
 const CONFIG = {
   name: '채채',
   birth: { y: 2001, m: 11, d: 8 },
+  unlock: { y: 2026, m: 11, d: 8 }, // 이 날 0시(한국 시간)부터 열림. 미리 보려면 주소 뒤에 #preview
   photos: [
     { src: 'p04', cap: '하트 가득 네컷' },
     { src: 'p09', cap: '노을 지는 언덕에서' },
@@ -250,7 +254,7 @@ const CONFIG = {
     { src: 'p03', cap: '프레첼 하트 🥨' },
     { src: 'p05', cap: '꽃받침' },
     { src: 'p06', cap: '햇살 가득 셀카' },
-    { src: 'p02', cap: '군대에서도 토끼랑 같이' },
+    { src: 'p02', cap: '토끼랑 같이, 누워서 셀카' },
     { src: 'p01', cap: '우리의 마스코트' },
   ],
   letter: `채채야, 스물다섯 번째 생일 축하해.
@@ -268,12 +272,10 @@ const CONFIG = {
 사랑해.`,
   sign: '너를 제일 좋아하는 사람이',
   coupons: [
-    { tag: '휴식', title: '어깨·발 마사지 30분', desc: '눕기만 하면 됨. 횟수 1회.' },
     { tag: '데이트', title: '데이트 코스 전권 위임', desc: '가고 싶은 곳, 먹고 싶은 것 전부 채채 맘대로.' },
     { tag: '맛집', title: '맛집 내가 쏨', desc: '메뉴 가격 상관없이 결제는 내가.' },
     { tag: '심부름', title: '뭐든 사다 주기 1회', desc: '새벽 편의점 포함. 군말 없이.' },
     { tag: '포옹', title: '꼭 안아주기 무제한', desc: '유효기간 없음. 지금 바로 사용 가능.' },
-    { tag: '사진', title: '인생네컷 같이 찍기', desc: '포즈는 채채가 정함. 이번엔 안 웃기기 금지.' },
   ],
 };
 /* ======================================= */
@@ -294,7 +296,26 @@ function showView(v) {
 }
 
 /* 카운트다운 */
+const UNLOCK_AT = Date.UTC(CONFIG.unlock.y, CONFIG.unlock.m - 1, CONFIG.unlock.d);
+let unlocked = false;
+function kstMs() { const n = KST(); return Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), n.getUTCDate(), n.getUTCHours(), n.getUTCMinutes(), n.getUTCSeconds()); }
+function lockTick() {
+  if (unlocked) return;
+  if (kstMs() >= UNLOCK_AT || location.hash === '#preview') {
+    unlocked = true;
+    $('#introTitle').innerHTML = '채채야<br>생일 축하해<small>스물다섯 번째 생일</small>';
+    $('#introSub').textContent = '오늘은 너를 위한 작은 앱이야';
+    $('#lockcd').hidden = true; $('#openBtn').hidden = false;
+    return;
+  }
+  let diff = UNLOCK_AT - kstMs();
+  const days = Math.floor(diff / 864e5); diff -= days * 864e5;
+  const h = Math.floor(diff / 36e5), mi = Math.floor(diff % 36e5 / 6e4), s = Math.floor(diff % 6e4 / 1e3);
+  $('#lockcd').innerHTML = `<b>${days}</b>일 <span>${String(h).padStart(2, '0')}:${String(mi).padStart(2, '0')}:${String(s).padStart(2, '0')}</span>`;
+}
+addEventListener('hashchange', lockTick);
 function tick() {
+  lockTick();
   const now = KST();
   const y = now.getUTCFullYear(), m = now.getUTCMonth() + 1, d = now.getUTCDate();
   const { m: bm, d: bd, y: by } = CONFIG.birth;
