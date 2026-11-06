@@ -159,10 +159,6 @@ nav{display:flex;background:var(--card);border-top:1px solid var(--line);padding
 .hud{display:flex;justify-content:space-between;font-family:var(--display);font-size:24px;color:var(--navy);font-variant-numeric:tabular-nums}
 .arena{position:relative;flex:1;min-height:300px;background:linear-gradient(180deg,#E6F4EA,#CFEDE3);border-radius:22px;overflow:hidden;touch-action:none}
 .arena img{position:absolute;left:0;top:0;width:72px;height:72px;border-radius:50%;object-fit:cover;border:3px solid #fff;box-shadow:0 6px 16px rgba(0,0,0,.2);touch-action:none;user-select:none;-webkit-user-select:none;-webkit-user-drag:none;cursor:pointer}
-.puz{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:3px;width:min(100%,340px);aspect-ratio:1;max-width:100%;margin:0 auto;background:var(--line);border-radius:14px;overflow:hidden;padding:3px}
-.puz button{min-height:0;background-size:300% 300%;background-repeat:no-repeat;border-radius:6px;background-color:var(--card)}
-.puz button.blank{background-image:none!important;background:var(--bg)}
-.puzhint{width:72px;height:72px;border-radius:10px;object-fit:cover;margin:0 auto}
 .lock{display:flex;flex-direction:column;align-items:center;gap:14px}
 .lock .slots{display:flex;gap:10px}
 .lock .slots b{width:52px;height:64px;border-radius:14px;background:var(--card);border:2px solid var(--line);display:grid;place-items:center;font-family:var(--display);font-size:36px;color:var(--navy)}
@@ -298,7 +294,6 @@ canvas.fx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-in
 <script src="photos/p09.js"></script>
 <script src="photos/p10.js"></script>
 <script src="photos/p11.js"></script>
-<script src="photos/sq.js"></script>
 <script>
 /* ======= 여기만 고치면 내용이 바뀌어요 ======= */
 const CONFIG = {
@@ -595,8 +590,8 @@ function fireworks(n) { for (let k = 0; k < n; k++) setTimeout(() => fire(.15 + 
 
 /* ===== 닌토의 미션: 생일에 열린 뒤 4단계를 깨야 들어갈 수 있음 ===== */
 const prog = store.get('mission') || { done: 0 };
-const M_TITLES = ['사진 짝 맞추기', '닌토 잡기', '사진 퍼즐', '마지막 자물쇠'];
-const STAGES = [memoryStage, catchStage, puzzleStage, lockStage];
+const M_TITLES = ['사진 짝 맞추기', '닌토 잡기', '마지막 자물쇠'];
+const STAGES = [memoryStage, catchStage, lockStage];
 const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 function isBirthdayToday() { const n = KST(); return n.getUTCMonth() + 1 === CONFIG.birth.m && n.getUTCDate() === CONFIG.birth.d; }
 function startMissions() { $('#mission').classList.add('on'); showStage(prog.done); }
@@ -618,7 +613,7 @@ function talk(body, html) { const d = document.createElement('div'); d.className
 
 function memoryStage(body, done) {
   talk(body, '닌토: 우리 사진 6쌍이 숨어 있어. 같은 사진 두 장을 찾아 봐!');
-  const keys = shuffle(['p04', 'p07', 'p08', 'p09', 'p10', 'p11'].flatMap(k => [k, k]));
+  const keys = shuffle(['p02', 'p04', 'p07', 'p08', 'p09', 'p10'].flatMap(k => [k, k]));
   const g = document.createElement('div'); g.className = 'mem'; body.appendChild(g);
   let open = [], lock = false, matched = 0;
   keys.forEach(k => {
@@ -672,32 +667,6 @@ function catchStage(body, done) {
       if (left <= 0) { running = false; cancelAnimationFrame(raf); clearInterval(timer); start.textContent = '아깝다, 다시!'; start.hidden = false; }
     }, 1000);
   });
-}
-
-function puzzleStage(body, done) {
-  talk(body, '닌토: 사진이 흩어졌어. 빈칸 옆 조각을 눌러서 옮겨 맞춰 봐.');
-  const hint = document.createElement('img'); hint.className = 'puzhint'; hint.src = photo('sq'); hint.alt = '완성 사진'; body.appendChild(hint);
-  const g = document.createElement('div'); g.className = 'puz'; body.appendChild(g);
-  let tiles = [0, 1, 2, 3, 4, 5, 6, 7, 8], solved = false; // tiles[칸] = 조각 번호, 8 = 빈칸
-  const blankAt = () => tiles.indexOf(8);
-  const adj = (a, b) => Math.abs(Math.floor(a / 3) - Math.floor(b / 3)) + Math.abs(a % 3 - b % 3) === 1;
-  const isSolved = () => tiles.every((t, i) => t === i);
-  do { for (let k = 0; k < 150; k++) { const b = blankAt(); const c = [0, 1, 2, 3, 4, 5, 6, 7, 8].filter(p => adj(p, b)); const p = c[Math.floor(Math.random() * c.length)]; [tiles[b], tiles[p]] = [tiles[p], tiles[b]]; } } while (isSolved());
-  const render = () => {
-    g.innerHTML = '';
-    tiles.forEach((t, pos) => {
-      const b = document.createElement('button'); b.setAttribute('aria-label', `조각 ${pos + 1}`);
-      if (t === 8 && !solved) b.className = 'blank';
-      else { b.style.backgroundImage = `url("${photo('sq')}")`; b.style.backgroundPosition = `${(t % 3) * 50}% ${Math.floor(t / 3) * 50}%`; }
-      b.addEventListener('click', () => {
-        if (solved) return; const bl = blankAt(); if (!adj(pos, bl)) return;
-        [tiles[pos], tiles[bl]] = [tiles[bl], tiles[pos]];
-        if (isSolved()) { solved = true; render(); done(); } else render();
-      });
-      g.appendChild(b);
-    });
-  };
-  render();
 }
 
 function lockStage(body, done) {
