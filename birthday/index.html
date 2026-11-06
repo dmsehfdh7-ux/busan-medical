@@ -159,6 +159,12 @@ nav{display:flex;background:var(--card);border-top:1px solid var(--line);padding
 .hud{display:flex;justify-content:space-between;font-family:var(--display);font-size:24px;color:var(--navy);font-variant-numeric:tabular-nums}
 .arena{position:relative;flex:1;min-height:300px;background:linear-gradient(180deg,#E6F4EA,#CFEDE3);border-radius:22px;overflow:hidden;touch-action:none}
 .arena img{position:absolute;left:0;top:0;width:72px;height:72px;border-radius:50%;object-fit:cover;border:3px solid #fff;box-shadow:0 6px 16px rgba(0,0,0,.2);touch-action:none;user-select:none;-webkit-user-select:none;-webkit-user-drag:none;cursor:pointer}
+.quiz{display:flex;flex-direction:column;align-items:center;gap:12px}
+.quiz input{width:min(100%,300px);max-width:100%;box-sizing:border-box;border:2px solid var(--line);border-radius:16px;padding:12px 16px;font-family:var(--display);font-size:26px;text-align:center;background:var(--card);color:var(--navy);outline:none}
+.quiz input:focus{border-color:var(--pink)}
+.quiz.bad input{border-color:var(--pink-deep);animation:shake .4s}
+.quiz.ok input{border-color:#1F9D6B;background:var(--mint)}
+.quizmsg{font-family:var(--display);font-size:20px;color:var(--pink-deep);min-height:26px;margin:0;text-align:center}
 .lock{display:flex;flex-direction:column;align-items:center;gap:14px}
 .lock .slots{display:flex;gap:10px}
 .lock .slots b{width:52px;height:64px;border-radius:14px;background:var(--card);border:2px solid var(--line);display:grid;place-items:center;font-family:var(--display);font-size:36px;color:var(--navy)}
@@ -327,6 +333,7 @@ const CONFIG = {
 태어나 줘서 고맙고, 내 옆에 있어 줘서 고마워.
 사랑해.`,
   sign: '너를 제일 좋아하는 사람이',
+  quiz: { q: '내가 제일 좋아하는 것은?', hint: '3글자', answers: ['임채원'] }, // 은석 퀴즈 (띄어쓰기 무시)
   lockCode: '1208', // 마지막 자물쇠 비밀번호
   lockHint: '우리가 처음 만난 날 (월일 4자리)',
   capsuleOpen: { y: 2027, m: 11, d: 8 },
@@ -590,8 +597,8 @@ function fireworks(n) { for (let k = 0; k < n; k++) setTimeout(() => fire(.15 + 
 
 /* ===== 닌토의 미션: 생일에 열린 뒤 4단계를 깨야 들어갈 수 있음 ===== */
 const prog = store.get('mission') || { done: 0 };
-const M_TITLES = ['사진 짝 맞추기', '닌토 잡기', '마지막 자물쇠'];
-const STAGES = [memoryStage, catchStage, lockStage];
+const M_TITLES = ['사진 짝 맞추기', '닌토 잡기', '은석 퀴즈', '마지막 자물쇠'];
+const STAGES = [memoryStage, catchStage, quizStage, lockStage];
 const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 function isBirthdayToday() { const n = KST(); return n.getUTCMonth() + 1 === CONFIG.birth.m && n.getUTCDate() === CONFIG.birth.d; }
 function startMissions() { $('#mission').classList.add('on'); showStage(prog.done); }
@@ -667,6 +674,20 @@ function catchStage(body, done) {
       if (left <= 0) { running = false; cancelAnimationFrame(raf); clearInterval(timer); start.textContent = '아깝다, 다시!'; start.hidden = false; }
     }, 1000);
   });
+}
+
+function quizStage(body, done) {
+  talk(body, `은석 퀴즈!<br>${CONFIG.quiz.q}<small>힌트: ${CONFIG.quiz.hint}</small>`);
+  const w = document.createElement('form'); w.className = 'quiz'; body.appendChild(w);
+  w.innerHTML = `<input id="quizIn" type="text" maxlength="12" autocomplete="off" placeholder="정답 입력"><button class="btn" type="submit">정답!</button><p class="quizmsg" id="quizMsg"></p>`;
+  const inp = $('#quizIn', w), msg = $('#quizMsg', w);
+  const norm = s => s.replace(/\s+/g, '').toLowerCase();
+  w.addEventListener('submit', e => {
+    e.preventDefault(); if (w.classList.contains('ok')) return;
+    if (CONFIG.quiz.answers.map(norm).includes(norm(inp.value))) { w.classList.add('ok'); msg.textContent = '정답! 역시 채채 💗'; inp.disabled = true; done(); }
+    else { w.classList.add('bad'); msg.textContent = ['땡! 다시 생각해 봐', '아니야, 더 쉬운 거야', '힌트: 세 글자, 사람 이름'][Math.min(2, (w.tries = (w.tries || 0) + 1) - 1)]; setTimeout(() => w.classList.remove('bad'), 450); inp.select(); }
+  });
+  setTimeout(() => inp.focus(), 300);
 }
 
 function lockStage(body, done) {
