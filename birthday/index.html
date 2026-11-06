@@ -344,6 +344,7 @@ const CONFIG = {
 };
 /* ======================================= */
 
+if (location.hash === '#test') { try { localStorage.removeItem('mission'); } catch {} } // 테스트: 잠금만 풀고 미션은 매번 처음부터
 if (location.hash === '#reset') { try { ['mission', 'coupons-used', 'scratched', 'capsule'].forEach(k => localStorage.removeItem(k)); } catch {} location.hash = ''; }
 
 const $ = (s, el = document) => el.querySelector(s);
@@ -369,7 +370,7 @@ let unlocked = false;
 function kstMs() { const n = KST(); return Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), n.getUTCDate(), n.getUTCHours(), n.getUTCMinutes(), n.getUTCSeconds()); }
 function lockTick() {
   if (unlocked) return;
-  if (kstMs() >= UNLOCK_AT || location.hash === '#preview') {
+  if (kstMs() >= UNLOCK_AT || location.hash === '#preview' || location.hash === '#test') {
     unlocked = true;
     $('#introTitle').innerHTML = '채채야<br>생일 축하해<small>스물다섯 번째 생일</small>';
     $('#introSub').textContent = '오늘은 너를 위한 작은 앱이야';
